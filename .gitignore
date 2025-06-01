@@ -144,7 +144,6 @@ dist
 *.sln
 *.sw?
 *.local
-.npmrc
 
 # Cache
 .mf
