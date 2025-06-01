@@ -57,8 +57,6 @@ jobs:
           path: |
             workers/frontend/dist/**
           key: qwik-c-${{ hashFiles('workers/frontend/src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
-          restore-keys: |
-            qwik-c-
           enableCrossOsArchive: true
       - run: npm --workspace frontend run build.client
         timeout-minutes: 1
