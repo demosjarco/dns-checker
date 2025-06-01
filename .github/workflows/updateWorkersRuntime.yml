@@ -36,7 +36,6 @@ jobs:
           cache: 'npm'
       - run: npm ci --ignore-scripts --include-workspace-root --workspaces
       - run: npm run-script install --if-present --include-workspace-root --workspaces
-      # No need to run `npm ci` in submodule
       - name: Get minor version of workerd
         id: get-version
         run: |
