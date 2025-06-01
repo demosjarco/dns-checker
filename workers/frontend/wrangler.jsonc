@@ -1,0 +1,23 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "dns-probe",
+	"main": "./dist/_worker.js",
+	"compatibility_date": "2025-06-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"workers_dev": false,
+	"preview_urls": false,
+	"route": { "pattern": "dns.demosjarco.dev", "custom_domain": true },
+	"minify": true,
+	"upload_source_maps": true,
+	"observability": { "enabled": true },
+	"vars": {
+		"ENVIRONMENT": "production",
+		"NODE_ENV": "production"
+	},
+	"assets": {
+		"binding": "ASSET",
+		"directory": "./dist"
+		// "not_found_handling": "single-page-application"
+	},
+	"version_metadata": { "binding": "CF_VERSION_METADATA" }
+}
