@@ -21,7 +21,7 @@
 		"start:clean": "npm run clean && qwik build && npm run start",
 		"start:build": "qwik build && npm run start",
 		"start": "vite --open --mode ssr",
-		"serve": "wrangler dev--live-reload true",
+		"serve": "wrangler dev --live-reload true",
 		"qwik": "qwik"
 	},
 	"repository": {
