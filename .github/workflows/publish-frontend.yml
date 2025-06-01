@@ -3,7 +3,7 @@ name: Publish frontend
 on:
   push:
     branches:
-      - main
+      - production
     paths:
       - '.github/workflows/publish-frontend.yml'
       - 'workers/frontend/**'
