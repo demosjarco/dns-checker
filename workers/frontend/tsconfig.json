@@ -14,5 +14,5 @@
 		"outDir": "tmp"
 	},
 	"files": ["./prettier.config.mjs", "eslint.config.mjs"],
-	"include": ["src", "./*.d.ts", "./*.config.ts"]
+	"include": ["src", "adapters", "./*.d.ts", "./*.config.ts"]
 }
