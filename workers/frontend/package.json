@@ -39,6 +39,10 @@
 	},
 	"engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime",
 	"devDependencies": {
+		"@builder.io/qwik": "^1.14.1",
+		"@builder.io/qwik-city": "^1.14.1",
+		"@cloudflare/workers-types": "^4.20250601.0",
+		"vite-tsconfig-paths": "^4.3.2",
 		"wrangler": "^4.18.0"
 	}
 }
