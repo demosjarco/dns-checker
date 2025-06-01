@@ -1,5 +1,6 @@
 import { component$ } from '@builder.io/qwik';
 import type { DocumentHead } from '@builder.io/qwik-city';
+import RecordSearch from '~/components/record-search';
 
 export const head: DocumentHead = {
 	title: 'Welcome to Qwik',
@@ -12,5 +13,11 @@ export const head: DocumentHead = {
 };
 
 export default component$(() => {
-	return <></>;
+	return (
+		<>
+			<header>
+				<RecordSearch />
+			</header>
+		</>
+	);
 });
