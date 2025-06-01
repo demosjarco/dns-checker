@@ -134,3 +134,24 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Development
+*.local
+.npmrc
+
+# Cache
+.mf
+.rollup.cache
+*.tsbuildinfo
+
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Cloudflare
+.wrangler
+.dev.vars
