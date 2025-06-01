@@ -49,7 +49,9 @@
 		"prettier-plugin-tailwindcss": "^0.6.12",
 		"rollup-plugin-visualizer": "^6.0.1",
 		"tailwindcss": "^4.1.8",
+		"turnstile-types": "^1.2.3",
 		"vite-tsconfig-paths": "^4.3.2",
-		"wrangler": "^4.18.0"
+		"wrangler": "^4.18.0",
+		"zaraz-ts": "^1.2.0"
 	}
 }
