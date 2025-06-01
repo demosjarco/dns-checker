@@ -10,16 +10,17 @@
 import { createQwikCity, type PlatformCloudflarePages } from '@builder.io/qwik-city/middleware/cloudflare-pages';
 import qwikCityPlan from '@qwik-city-plan';
 import type { PlatformProxy } from 'wrangler';
+import type { EnvVars } from '~/types';
 import render from './entry.ssr';
 
 declare global {
 	interface QwikCityPlatformLive extends Omit<PlatformCloudflarePages, 'request' | 'env' | 'ctx'> {
 		request: Request;
-		env: Env;
+		env: EnvVars;
 		ctx: ExecutionContext;
 		cf?: never;
 	}
-	interface QwikCityPlatformLocal extends Omit<PlatformProxy<Env>, 'request'> {
+	interface QwikCityPlatformLocal extends Omit<PlatformProxy<EnvVars>, 'request'> {
 		request?: never;
 	}
 	type QwikCityPlatform = QwikCityPlatformLive | QwikCityPlatformLocal;
