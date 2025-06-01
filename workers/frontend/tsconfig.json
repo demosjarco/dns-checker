@@ -9,7 +9,7 @@
 		"paths": {
 			"~/*": ["./src/*"]
 		},
-		"types": ["worker-configuration.d.ts", "node", "turnstile-types", "zaraz-ts"],
+		"types": ["./worker-configuration.d.ts", "node", "turnstile-types", "zaraz-ts"],
 		"sourceMap": true,
 		"outDir": "tmp"
 	},
