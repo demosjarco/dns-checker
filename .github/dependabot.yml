@@ -1,0 +1,117 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: 'devcontainers'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 999
+  - package-ecosystem: 'docker'
+    directories:
+      - '/.devcontainer'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 999
+    ignore:
+      # Match lts/*
+      - dependency-name: 'node'
+        versions:
+          - '>=23'
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 999
+    groups:
+      artifacts:
+        patterns:
+          - 'actions/*-artifact'
+      caches:
+        patterns:
+          - 'actions/cache'
+          - 'actions/cache/*'
+      ci-cd:
+        patterns:
+          - 'changesets/*'
+          - 'dependabot/*'
+      sast:
+        patterns:
+          - 'github/codeql-*'
+          - 'actions/dependency-review-action'
+          - 'step-security/*'
+          - 'microsoft/security-devops-action'
+          - 'microsoft/DevSkim-Action'
+          - 'ossf/*'
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    versioning-strategy: increase
+    open-pull-requests-limit: 999
+    ignore:
+      # Match lts/*
+      - dependency-name: '@types/node'
+        versions:
+          - '>=23.0.0'
+      # Currently not supported by qwik
+      - dependency-name: 'vite-tsconfig-paths'
+        versions:
+          - '>=5.0.0'
+    groups:
+      cloudflare:
+        patterns:
+          - 'cloudflare'
+          - '@cloudflare/*'
+          - 'wrangler'
+        exclude-patterns:
+          - '@cloudflare/workers-types'
+      code-management:
+        patterns:
+          - 'prettier'
+          - 'prettier-plugin-*'
+          - '@demosjarco/prettier-config'
+          - 'eslint'
+          - '@eslint/*'
+          - 'eslint-plugin-*'
+          - 'eslint-config-*'
+          - 'typescript-eslint'
+      design:
+        patterns:
+          - '@tailwindcss/*'
+          - 'tailwind*'
+          - 'flowbite'
+          - '@qwikest/icons'
+          - 'mermaid'
+      db:
+        patterns:
+          - 'drizzle-*'
+      monorepo-management:
+        patterns:
+          - 'lerna'
+          - '@changesets/*'
+      qwik:
+        patterns:
+          - '@builder.io/qwik'
+          - '@builder.io/qwik*'
+          - 'vite-*'
+          - '@rollup/plugin-*'
+          - 'rollup-plugin-*'
+      typescript-core:
+        patterns:
+          - 'typescript'
+          - 'tsx'
+      typescript-types:
+        patterns:
+          - '@types/*'
+          - '@cloudflare/workers-types'
+          - 'turnstile-types'
+          - 'zaraz-ts'
+      validation:
+        patterns:
+          - 'zod'
+          - 'validator'
+          - 'valibot'
