@@ -1,0 +1,41 @@
+{
+	"name": "frontend",
+	"type": "module",
+	"scripts": {
+		"build": "qwik build",
+		"build:pages": "npm run build.types && npm run build.client && npm run build.server",
+		"build.client": "vite build",
+		"build.preview": "vite build --ssr src/entry.preview.tsx",
+		"build.server": "vite build -c adapters/cloudflare-pages/vite.config.ts",
+		"build.types": "tsc --incremental --noEmit",
+		"dev": "vite --mode ssr",
+		"dev.debug": "node --inspect-brk ./node_modules/vite/bin/vite.js --mode ssr --force",
+		"fmt": "prettier --check .",
+		"fmt:fix": "prettier --write .",
+		"lint": "eslint **/*.*ts*",
+		"lint:fix": "npm run lint -- --fix",
+		"preview": "qwik build preview && vite preview --open",
+		"preview:lhci": "qwik build preview && vite preview --port 8080",
+		"serve": "wrangler dev--live-reload true",
+		"start:clean": "npm run clean && qwik build && npm run start",
+		"start:build": "qwik build && npm run start",
+		"start": "vite --open --mode ssr",
+		"qwik": "qwik",
+		"cf-typegen": "wrangler types"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/demosjarco/dns-checker.git"
+	},
+	"author": "DemosJarco <1209494+demosjarco@users.noreply.github.com>",
+	"license": "MIT",
+	"private": true,
+	"bugs": {
+		"url": "https://github.com/demosjarco/dns-checker/issues"
+	},
+	"homepage": "https://github.com/demosjarco/dns-checker#readme",
+	"engines": {
+		"node": "^18.17.0 || ^20.3.0 || >=21.0.0"
+	},
+	"engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime"
+}
