@@ -1,0 +1,64 @@
+name: Clean SVGs
+
+on:
+  push:
+    paths:
+      - '.github/workflows/svg-hush.yml'
+      - '**.svg'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          disable-sudo-and-containers: true
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      # https://github.com/actions/cache/blob/main/examples.md#rust---cargo
+      # https://github.com/rust-lang/cargo/issues/4725
+      # https://doc.rust-lang.org/cargo/reference/environment-variables.html
+      - name: Rust Package Cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      # https://doc.rust-lang.org/cargo/guide/continuous-integration.html#github-actions
+      - run: rustup update stable && rustup default stable
+      - run: cargo install svg-hush --force
+      - name: Clean SVGs in `src`
+        run: |
+          for file in $(find ${{ github.workspace }}/frontend -iname '*.svg'); do
+            echo "Sanitizing: $file"
+            svg-hush $file > ${file}.tmp
+            mv -f ${file}.tmp $file
+          done
+      - name: Check for Changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Git Setup
+        if: steps.changes.outputs.changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - run: git commit -am "Ran svg cleaner"
+        if: steps.changes.outputs.changes == 'true'
+      - run: git push
+        if: steps.changes.outputs.changes == 'true'
