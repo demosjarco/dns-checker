@@ -14,10 +14,10 @@ export const head: DocumentHead = {
 
 export default component$(() => {
 	return (
-		<>
+		<div class="flex min-h-screen flex-col bg-gradient-to-b from-[#FAAD3F] to-[#F48120] dark:from-[#5D52C0] dark:to-[#7F20DF]">
 			<header>
 				<RecordSearch />
 			</header>
-		</>
+		</div>
 	);
 });
