@@ -136,14 +136,6 @@ dist
 .pnp.*
 
 # Development
-*.local
-.npmrc
-
-# Cache
-.mf
-.rollup.cache
-*.tsbuildinfo
-
 .idea
 .DS_Store
 *.suo
@@ -151,6 +143,13 @@ dist
 *.njsproj
 *.sln
 *.sw?
+*.local
+.npmrc
+
+# Cache
+.mf
+.rollup.cache
+*.tsbuildinfo
 
 # Cloudflare
 .wrangler
