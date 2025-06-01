@@ -61,7 +61,7 @@ jobs:
           apiToken: ${{ secrets.WORKER_DEPLOY_CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           environment: ${{ (vars.ENVIRONMENT == 'production' && '') || vars.ENVIRONMENT }}
-          workingDirectory: sidecar
+          workingDirectory: workers/frontend
           vars: |
             GIT_HASH
         env:
