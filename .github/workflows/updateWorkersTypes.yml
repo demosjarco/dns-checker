@@ -1,0 +1,42 @@
+name: Frontend | Update worker types
+
+on:
+  push:
+    paths:
+      - '.github/workflows/updateWorkersTypes.yml'
+      - 'workers/frontend/worker-configuration.d.ts'
+      - 'workers/frontend/wrangler.jsonc'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-files:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          disable-sudo-and-containers: true
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: lts/*
+          check-latest: true
+          cache: 'npm'
+      - run: npm ci --ignore-scripts --include-workspace-root --workspace frontend
+      - run: npm run-script install --if-present --include-workspace-root --workspace frontend
+      - run: npm --workspace frontend run build.types.cf
+      - run: npm --workspace frontend run fmt:fix
+      - name: Git Setup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - run: git add workers/frontend/worker-configuration.d.ts
+      - run: git commit -m "Update worker types" || echo "worker types update not needed"
+      - run: git push
