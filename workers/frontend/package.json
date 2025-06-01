@@ -17,10 +17,10 @@
 		"lint:fix": "npm run lint -- --fix",
 		"preview": "qwik build preview && vite preview --open",
 		"preview:lhci": "qwik build preview && vite preview --port 8080",
-		"serve": "wrangler dev--live-reload true",
 		"start:clean": "npm run clean && qwik build && npm run start",
 		"start:build": "qwik build && npm run start",
 		"start": "vite --open --mode ssr",
+		"serve": "wrangler dev--live-reload true",
 		"qwik": "qwik"
 	},
 	"repository": {
