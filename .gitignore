@@ -149,6 +149,8 @@ stats.html
 # Cache
 .mf
 .rollup.cache
+dist
+workers/frontend/server
 *.tsbuildinfo
 
 # Cloudflare
