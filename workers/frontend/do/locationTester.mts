@@ -81,7 +81,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 					}
 				}),
 			),
-		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0], 10)}`]?.toLowerCase());
+		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
 	}
 
 	public lockIn(coloId: string) {
