@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { EnvVars } from '~/types';
+import { PROBE_DB_D1_ID, type EnvVars } from '~/types';
 
 interface Trace extends Record<string, string> {
 	fl: `${number}f${number}`;
@@ -117,7 +117,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 			drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(this.d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 				casing: 'snake_case',
-				cache: new SQLCache('deb65f23-6198-4911-85b8-d48810a080cc', 'd1', parseInt(this.env.SQL_TTL, 10), 'all'),
+				cache: new SQLCache(PROBE_DB_D1_ID, 'd1', parseInt(this.env.SQL_TTL, 10), 'all'),
 			}),
 		);
 	}
