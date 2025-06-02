@@ -156,10 +156,7 @@ export default {
 					Promise.allSettled(
 						colosToCreate.map((coloToCreate) => {
 							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
-							console.debug(iataCode);
-
 							const iataLocation = allAirports[iataCode];
-							console.debug(iataCode, iataLocation);
 
 							if (iataLocation) {
 								// Extract subdivision code from iso_region (part after hyphen)
