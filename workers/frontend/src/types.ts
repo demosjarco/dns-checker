@@ -3,5 +3,6 @@ export interface EnvVars extends Secrets, Env {
 	CF_ACCOUNT_ID: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Secrets {}
+interface Secrets {
+	CF_API_TOKEN: string;
+}
