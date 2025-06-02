@@ -2,7 +2,6 @@ import { qwikCity, type QwikCityVitePluginOptions } from '@builder.io/qwik-city/
 import { qwikVite } from '@builder.io/qwik/optimizer';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import tailwindcss from '@tailwindcss/vite';
-import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, type UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -34,11 +33,6 @@ export default defineConfig((): UserConfig => {
 				browser: true,
 				modulesOnly: true,
 				preferBuiltins: true,
-			}),
-			visualizer({
-				template: 'sunburst',
-				gzipSize: true,
-				brotliSize: true,
 			}),
 		],
 		server: {
