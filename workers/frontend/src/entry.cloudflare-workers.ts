@@ -53,8 +53,7 @@ export default {
 				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
-					// @ts-expect-error We're using coop cache (drizzle needs to fix types)
-					cache: new SQLCache(parseInt(env.SQL_TTL, 10), ctx),
+					cache: new SQLCache(parseInt(env.SQL_TTL, 10)),
 				}),
 			);
 		}
