@@ -6,6 +6,19 @@ import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
 
 export { LocationTester } from '~do/locationTester.mjs';
 
+/**
+ * Temporary
+ * @link https://github.com/elsbrock/iata-location/issues/3
+ */
+interface Airport {
+	latitude_deg: string;
+	longitude_deg: string;
+	iso_country: string;
+	iso_region: string;
+	municipality: string;
+	iata_code: string;
+}
+
 export default {
 	/**
 	 * @link https://qwik.dev/docs/deployments/cloudflare-pages/#cloudflare-pages-entry-middleware
@@ -74,7 +87,7 @@ export default {
 						})),
 					),
 			),
-		]).then(([doColos, instanceColos]) => {
+		]).then(async ([doColos, instanceColos]) => {
 			const instanceFullColos = instanceColos.map((instanceColo) => `${instanceColo.iata}${instanceColo.colo}`.toLowerCase());
 			console.debug('doColos', doColos);
 			console.debug('instanceColos', instanceColos);
@@ -108,8 +121,32 @@ export default {
 			const colosToCreate = doColos.filter((doColo) => !instanceFullColos.includes(doColo));
 
 			if (colosToCreate.length > 0) {
-				console.info('Creating testers', colosToCreate);
-				// TODO: Implement creation logic
+				console.info('Creating colos', colosToCreate);
+
+				await Promise.allSettled(
+					colosToCreate.map(async (coloToCreate) => {
+						await Promise.all([
+							//
+							import('@chainfuse/helpers').then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false })),
+							import('iata-location').then(({ lookupAirport }) => lookupAirport(coloToCreate.slice(0, 3).toUpperCase()) as Promise<Airport | undefined>),
+						])
+							.then(([cfApi, iataLocation]) =>
+								cfApi.loadBalancers.regions.list({
+									account_id: env.CF_ACCOUNT_ID,
+									country_code_a2: iataLocation?.iso_country,
+									...(iataLocation?.iso_country &&
+										/**
+										 * Only US and Canada support `subdivision_code`
+										 * @link https://developers.cloudflare.com/load-balancing/reference/region-mapping-api/
+										 */
+										['US', 'CA'].includes(iataLocation.iso_country) && { subdivision_code: iataLocation.iso_region }),
+								}),
+							)
+							.then((regionInfo) => {
+								console.debug('Trying to create colo', regionInfo);
+							});
+					}),
+				);
 			} else {
 				console.debug('No colos to create');
 			}
