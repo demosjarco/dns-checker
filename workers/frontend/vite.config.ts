@@ -12,7 +12,7 @@ const cloudflareRuntimes: `cloudflare:${string}`[] = ['cloudflare:email', 'cloud
 
 let platform: QwikCityVitePluginOptions['platform'] = {};
 
-if (process.env['GITHUB_ACTIONS'] === 'true') {
+if (process.env['GITHUB_ACTIONS'] !== 'true' && process.env['GIT_HASH'] === undefined) {
 	await import('wrangler').then(({ getPlatformProxy }) =>
 		getPlatformProxy().then((proxy) => {
 			platform = proxy;
