@@ -33,8 +33,8 @@ export class SQLCache extends Cache {
 		return 'all';
 	}
 
-	private static getCacheKey(key: string, init?: ConstructorParameters<typeof Request>[1]) {
-		return new Request(new URL(key, 'https://dns-probe.d1'), init);
+	private static getCacheKey(tagOrKey: { tag: string } | { key: string }, init?: ConstructorParameters<typeof Request>[1]) {
+		return new Request(new URL(('tag' in tagOrKey ? ['tag', tagOrKey.tag] : ['key', tagOrKey.key]).join('/'), 'https://dns-probe.d1'), init);
 	}
 
 	/**
@@ -42,9 +42,9 @@ export class SQLCache extends Cache {
 	 * @param key - A hashed query and parameters.
 	 */
 	override async get(key: string, tables: string[], isTag: boolean, isAutoInvalidate?: boolean): Promise<any[] | undefined> {
-		const response = await this.cache.then(async (cache) => cache.match(SQLCache.getCacheKey(key)));
+		const response = await this.cache.then(async (cache) => cache.match(SQLCache.getCacheKey(isTag ? { tag: key } : { key })));
 
-		console.debug('SQLCache.get', key, response?.ok ? 'HIT' : 'MISS');
+		console.debug('SQLCache.get', isTag ? 'tag' : 'key', key, response?.ok ? 'HIT' : 'MISS');
 
 		if (response) {
 			return response.json();
@@ -63,18 +63,27 @@ export class SQLCache extends Cache {
 	 * If you're okay with eventual consistency for your queries, you can skip this option.
 	 */
 	override async put(hashedQuery: string, response: any, tables: string[], isTag: boolean, config?: CacheConfig): Promise<void> {
+		let ttl: number = this.globalTtl;
+		if (config?.ex) {
+			ttl = config.ex;
+		} else if (config?.px) {
+			ttl = Math.floor(config.px / 1000);
+		} else if (config?.exat) {
+			ttl = Math.floor((new Date(config.exat * 1000).getTime() - Date.now()) / 1000);
+		} else if (config?.pxat) {
+			ttl = Math.floor((new Date(config.pxat).getTime() - Date.now()) / 1000);
+		}
+
 		const cacheRequest = new Response(JSON.stringify(response), {
 			headers: {
 				'Content-Type': 'application/json',
-				'Cache-Control': `public, max-age=${config?.ex ?? this.globalTtl}, s-maxage=${config?.ex ?? this.globalTtl}`,
+				'Cache-Control': `public, max-age=${ttl}, s-maxage=${ttl}`,
 			},
 		});
 
 		cacheRequest.headers.set('ETag', await import('@chainfuse/helpers').then(({ CryptoHelpers }) => CryptoHelpers.generateETag(cacheRequest)));
 
-		console.debug('SQLCache', 'putting', cacheRequest);
-
-		await this.cache.then(async (cache) => cache.put(SQLCache.getCacheKey(hashedQuery), cacheRequest)).then(() => console.debug('SQLCache.put', hashedQuery, 'SUCCESS'));
+		await this.cache.then(async (cache) => cache.put(SQLCache.getCacheKey(isTag ? { tag: hashedQuery } : { key: hashedQuery }), cacheRequest)).then(() => console.debug('SQLCache.put', isTag ? 'tag' : 'key', hashedQuery, 'SUCCESS'));
 
 		for (const table of tables) {
 			const keys = this.usedTablesPerKey[table];
@@ -104,10 +113,10 @@ export class SQLCache extends Cache {
 		}
 		if (keysToDelete.size > 0 || tagsArray.length > 0) {
 			for (const tag of tagsArray) {
-				await this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey(tag))).then(() => console.debug('SQLCache.delete', tag, 'SUCCESS'));
+				await this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey({ tag }))).then(() => console.debug('SQLCache.delete', 'tag', tag, 'SUCCESS'));
 			}
 			for (const key of keysToDelete) {
-				await this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey(key))).then(() => console.debug('SQLCache.delete', key, 'SUCCESS'));
+				await this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey({ key }))).then(() => console.debug('SQLCache.delete', 'key', key, 'SUCCESS'));
 
 				for (const table of tablesArray) {
 					const tableName = is(table, Table) ? getTableName(table) : (table as string);
