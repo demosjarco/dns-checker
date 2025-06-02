@@ -1,5 +1,6 @@
 import { component$ } from '@builder.io/qwik';
 import type { DocumentHead } from '@builder.io/qwik-city';
+import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
 import { useGitHash, useWorkerMetadata } from '~/routes/layout';
 
@@ -22,9 +23,11 @@ export default component$(() => {
 			<header>
 				<RecordSearch />
 			</header>
-			<main class="flex flex-1 p-8">
-				<section></section>
-				<aside></aside>
+			<main class="flex flex-1">
+				<section>Hello world</section>
+				<aside class="grow">
+					<Map />
+				</aside>
 			</main>
 			<footer class="border-t border-black/12 bg-white/22 py-4 text-center text-sm text-black/80 dark:border-white/33 dark:bg-black/22 dark:text-white/80">
 				<a target="_blank" href={`https://github.com/demosjarco/dns-checker/commit/${gitHash.value ?? 'production'}`}>
