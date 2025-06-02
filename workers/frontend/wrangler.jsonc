@@ -20,7 +20,7 @@
 	"vars": {
 		"ENVIRONMENT": "production",
 		"NODE_ENV": "production",
-		"SQL_TTL": "300"
+		"SQL_TTL": "86400"
 	},
 	"assets": {
 		"binding": "ASSET",
