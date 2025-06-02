@@ -8,7 +8,7 @@ export default defineConfig({
 	out: './db/migrations',
 	dbCredentials: {
 		accountId: process.env['CF_ACCOUNT_ID']!,
-		databaseId: '7a33b743-c9ee-4174-85ff-33c7510b9bdc',
+		databaseId: 'deb65f23-6198-4911-85b8-d48810a080cc',
 		token: process.env['DB_MIGRATE_CF_API_TOKEN']!,
 	},
 });
