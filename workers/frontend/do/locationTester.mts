@@ -21,6 +21,21 @@ interface Trace extends Record<string, string> {
 }
 
 export abstract class LocationTester<E extends Env = EnvVars> extends DurableObject<E> {
+	constructor(ctx: LocationTester<E>['ctx'], env: LocationTester<E>['env']) {
+		super(ctx, env);
+
+		ctx.waitUntil(
+			this.ctx.storage.getAlarm().then((alarm) => {
+				if (!alarm) {
+					// Calculate next GMT midnight
+					const now = new Date();
+					const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
+					return this.ctx.storage.setAlarm(nextGMTMidnight);
+				}
+			}),
+		);
+	}
+
 	private parseTraceData(text: string): Trace {
 		const data: Record<string, string> = {};
 
@@ -94,5 +109,36 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 			this.ctx.storage.deleteAlarm(),
 			this.ctx.storage.deleteAll(),
 		]);
+	}
+
+	private drizzleRef(dbRef: D1Database = this.env.PROBE_DB) {
+		return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras.mjs')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
+			drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession('first-unconstrained') as unknown as D1Database) : dbRef, {
+				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
+				casing: 'snake_case',
+				// @ts-expect-error We're using coop cache (drizzle needs to fix types)
+				cache: new SQLCache(parseInt(this.env.SQL_TTL, 10), this.ctx),
+			}),
+		);
+	}
+
+	override async alarm() {
+		// Calculate next GMT midnight
+		const now = new Date();
+		const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
+		this.ctx.waitUntil(this.ctx.storage.setAlarm(nextGMTMidnight));
+
+		await Promise.all([this.ctx.storage.get<string>('colo'), this.fullColo]).then(([storedColo, currentColo]) => {
+			if (storedColo?.toLowerCase() === currentColo?.toLowerCase()) {
+				console.debug('Verified', storedColo, "hasn't moved");
+			} else {
+				this.ctx.waitUntil(
+					Promise.all([this.drizzleRef(), import('../db/schema'), import('drizzle-orm')])
+						// Delete from D1
+						.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`))),
+				);
+				this.ctx.waitUntil(this.nuke());
+			}
+		});
 	}
 }
