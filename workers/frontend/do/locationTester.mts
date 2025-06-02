@@ -21,7 +21,7 @@ interface Trace extends Record<string, string> {
 }
 
 export abstract class LocationTester<E extends Env = EnvVars> extends DurableObject<E> {
-	private static parseTraceData(text: string): Trace {
+	private parseTraceData(text: string): Trace {
 		const data: Record<string, string> = {};
 
 		text.trim()
@@ -41,7 +41,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 
 		return data as unknown as Trace;
 	}
-	static get fl() {
+	private get fl() {
 		return import('@chainfuse/helpers').then(({ NetHelpers }) =>
 			NetHelpers.loggingFetch(new URL('cdn-cgi/trace', 'https://demosjarco.dev'), {
 				cf: {
@@ -61,7 +61,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 		);
 	}
 
-	static get fullColo() {
+	public get fullColo() {
 		return Promise.all([
 			this.fl,
 			import('@chainfuse/helpers').then(({ NetHelpers }) =>
@@ -81,7 +81,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 					}
 				}),
 			),
-		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
+		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0], 10)}`]?.toLowerCase());
 	}
 
 	public async nuke() {
