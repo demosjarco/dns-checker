@@ -26,7 +26,7 @@ export const instances = sqliteTable(
 		/**
 		 * @deprecated DO NOT USE (BufferHelpers is faster and cheaper)
 		 */
-		doId_utf8: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.doId}))`, { mode: 'virtual' }),
+		doId_hex: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.doId}))`, { mode: 'virtual' }),
 		location: i
 			.text({ mode: 'text' })
 			.notNull()
