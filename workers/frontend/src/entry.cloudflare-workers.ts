@@ -236,7 +236,11 @@ export default {
 															doId: sql<Buffer>`unhex(${doId.toString()})`,
 															iata: iataCode,
 															iso_country: iataLocation.iso_country.toUpperCase(),
-															iso_region: iataLocation.iso_region.split('-')[1]!.toUpperCase(),
+															/**
+															 * Only the US and Canada have subdivisions
+															 * @link https://developers.cloudflare.com/load-balancing/reference/region-mapping-api/
+															 */
+															...(['US', 'CA'].includes(iataLocation.iso_country.toUpperCase()) && { iso_region: iataLocation.iso_region.split('-')[1]!.toUpperCase() }),
 															location: locationHint,
 														}),
 													)
