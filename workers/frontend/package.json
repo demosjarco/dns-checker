@@ -26,7 +26,7 @@
 		"deploy:db:live": "wrangler d1 migrations apply PROBE_DB --remote",
 		"deploy:db:local": "wrangler d1 migrations apply PROBE_DB --local",
 		"dump:db": "wrangler d1 export PROBE_DB --remote --no-schema --output",
-		"clone:db": "npx -y rimraf@latest ./.wrangler && npm run deploy:db:local && wrangler d1 execute PROBE_DB --local --command \"DELETE FROM d1_migrations\" && npm run dump:db -- ./dump.sql && wrangler d1 execute PROBE_DB --local --file ./dump.sql && npx -y rimraf@latest ./dump.sql"
+		"clone:db": "npx -y rimraf@latest ./.wrangler/state/v3/d1 && npm run deploy:db:local && wrangler d1 execute PROBE_DB --local --command \"DELETE FROM d1_migrations\" && npm run dump:db -- ./dump.sql && wrangler d1 execute PROBE_DB --local --file ./dump.sql && npx -y rimraf@latest ./dump.sql"
 	},
 	"repository": {
 		"type": "git",
