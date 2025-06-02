@@ -156,17 +156,33 @@ export default {
 					Promise.allSettled(
 						colosToCreate.map((coloToCreate) => {
 							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
-							console.debug('Searching IATA', iataCode);
+							console.debug(iataCode);
 
 							const iataLocation = allAirports[iataCode];
-							console.debug('iataLocation', iataLocation);
+							console.debug(iataCode, iataLocation);
 
 							if (iataLocation) {
+								// Extract subdivision code from iso_region (part after hyphen)
+								const subdivisionCode = iataLocation.iso_region.split('-')[1]?.toUpperCase();
+
 								// Find matching region_code by iterating over regions
-								const matchingRegion = regions.find((region) => region.countries.some((country) => country.country_code_a2.toUpperCase() === iataLocation.iso_country.toUpperCase()))?.region_code;
+								const matchingRegion = regions.find((region) =>
+									region.countries.some((country) => {
+										// First check if country matches
+										if (country.country_code_a2.toUpperCase() !== iataLocation.iso_country.toUpperCase()) {
+											return false;
+										} else if (subdivisionCode && country.country_subdivisions?.length) {
+											// If subdivision code exists and country has subdivisions, check subdivision match
+											return country.country_subdivisions.some((subdivision) => subdivision.subdivision_code_a2.toUpperCase() === subdivisionCode);
+										} else {
+											// If no subdivision code or no subdivisions available, country match is sufficient
+											return true;
+										}
+									}),
+								)?.region_code;
 
 								if (matchingRegion) {
-									console.debug('Found matching region_code:', matchingRegion);
+									console.debug(iataCode, iataLocation, matchingRegion);
 								} else {
 									throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
 								}
