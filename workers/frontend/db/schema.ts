@@ -35,7 +35,7 @@ export const instances = sqliteTable(
 		iata: i.text({ mode: 'text' }).notNull(),
 		colo: i.integer({ mode: 'number' }).notNull(),
 		iso_country: i.text({ mode: 'text' }).notNull(),
-		iso_region: i.text({ mode: 'text' }).notNull(),
+		iso_region: i.text({ mode: 'text' }),
 	}),
 	(i) => [unique().on(i.iata, i.colo)],
 );
