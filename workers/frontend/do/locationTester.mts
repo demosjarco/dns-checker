@@ -77,6 +77,10 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 		);
 	}
 
+	public get iata() {
+		return this.fl.then(({ colo }) => colo.toUpperCase());
+	}
+
 	public get fullColo() {
 		return Promise.all([
 			this.fl,
@@ -100,8 +104,8 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
 	}
 
-	public lockIn(fullColo: string) {
-		return this.ctx.storage.put('colo', fullColo.toLowerCase());
+	public lockIn(iata: string) {
+		return this.ctx.storage.put('iata', iata);
 	}
 
 	public async nuke() {
@@ -129,9 +133,9 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 		this.ctx.waitUntil(this.ctx.storage.setAlarm(nextGMTMidnight));
 
 		// Self nuke if no longer in original location
-		await Promise.all([this.ctx.storage.get<string>('colo'), this.fullColo]).then(([storedColo, currentColo]) => {
-			if (storedColo?.toLowerCase() === currentColo?.toLowerCase()) {
-				console.debug('Verified', storedColo, "hasn't moved");
+		await Promise.all([this.ctx.storage.get<string>('iata'), this.iata]).then(([storedIata, currentIata]) => {
+			if (storedIata === currentIata) {
+				console.debug('Verified', storedIata, "hasn't moved");
 			} else {
 				this.ctx.waitUntil(
 					Promise.all([this.drizzleRef(), import('../db/schema'), import('drizzle-orm')])
