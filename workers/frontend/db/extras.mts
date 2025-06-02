@@ -1,5 +1,5 @@
 import { is } from 'drizzle-orm';
-import { Cache } from 'drizzle-orm/cache/core';
+import { NoopCache } from 'drizzle-orm/cache/core';
 import type { LogWriter } from 'drizzle-orm/logger';
 import { getTableName, Table } from 'drizzle-orm/table';
 
@@ -24,7 +24,7 @@ export interface CacheConfig {
 	hexOptions?: 'NX' | 'XX' | 'GT' | 'LT' | 'nx' | 'xx' | 'gt' | 'lt';
 }
 
-export class SQLCache extends Cache {
+export class SQLCache extends NoopCache {
 	private ctx?: ExecutionContext;
 	private globalTtl: number;
 	// This object will be used to store which query keys were used
@@ -45,8 +45,8 @@ export class SQLCache extends Cache {
 	 * - 'all': All queries are cached globally.
 	 * @default 'explicit'
 	 */
-	override strategy(): 'explicit' | 'all' {
-		return 'explicit';
+	override strategy() {
+		return 'all' as const;
 	}
 
 	private static getCacheKey(key: string, init?: ConstructorParameters<typeof Request>[1]) {
@@ -71,20 +71,20 @@ export class SQLCache extends Cache {
 
 	/**
 	 * This function accepts several options to define how cached data will be stored:
-	 * @param key - A hashed query and parameters.
+	 * @param hashedQuery - A hashed query and parameters.
 	 * @param response - An array of values returned by Drizzle from the database.
 	 * @param tables - An array of tables involved in the select queries. This information is needed for cache invalidation.
 	 *
 	 * For example, if a query uses the "users" and "posts" tables, you can store this information. Later, when the app executes any mutation statements on these tables, you can remove the corresponding key from the cache.
 	 * If you're okay with eventual consistency for your queries, you can skip this option.
 	 */
-	override async put(key: string, response: any, tables: string[], config?: CacheConfig): Promise<void> {
+	override async put(hashedQuery: string, response: any, tables: string[], config?: CacheConfig): Promise<void> {
 		const cacheBody = JSON.stringify(response);
 
 		const promise = this.cache
 			.then(async (cache) =>
 				cache.put(
-					SQLCache.getCacheKey(key),
+					SQLCache.getCacheKey(hashedQuery),
 					new Response(cacheBody, {
 						headers: {
 							ETag: await import('@chainfuse/helpers').then(({ CryptoHelpers }) => CryptoHelpers.generateETag(new Response(cacheBody))),
@@ -94,7 +94,7 @@ export class SQLCache extends Cache {
 					}),
 				),
 			)
-			.then(() => console.debug('SQLCache.put', key, 'SUCCESS'));
+			.then(() => console.debug('SQLCache.put', hashedQuery, 'SUCCESS'));
 		if (this.ctx && typeof this.ctx.waitUntil === 'function') {
 			this.ctx.waitUntil(promise);
 		} else {
@@ -104,9 +104,9 @@ export class SQLCache extends Cache {
 		for (const table of tables) {
 			const keys = this.usedTablesPerKey[table];
 			if (keys === undefined) {
-				this.usedTablesPerKey[table] = [key];
+				this.usedTablesPerKey[table] = [hashedQuery];
 			} else {
-				keys.push(key);
+				keys.push(hashedQuery);
 			}
 		}
 	}
