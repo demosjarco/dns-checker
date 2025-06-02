@@ -65,6 +65,7 @@ export default {
 						colo: instances.colo,
 					})
 					.from(instances)
+					.$withCache()
 					.then((rows) =>
 						rows.map(({ doId, ...row }) => ({
 							...row,
@@ -100,6 +101,16 @@ export default {
 				);
 			} else {
 				console.debug('No colos to delete');
+			}
+
+			// Find colos that don't exist in instances but do in doColos (should be created)
+			const colosToCreate = doColos.filter((doColo) => !instanceFullColos.includes(doColo));
+
+			if (colosToCreate.length > 0) {
+				console.info('Creating testers', colosToCreate);
+				// TODO: Implement creation logic
+			} else {
+				console.debug('No colos to create');
 			}
 		});
 	},
