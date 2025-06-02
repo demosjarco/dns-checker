@@ -146,32 +146,37 @@ export default {
 			if (colosToCreate.length > 0) {
 				console.info('Creating colos', colosToCreate);
 
-				await Promise.allSettled(
-					colosToCreate.map(async (coloToCreate) => {
-						await Promise.all([
-							//
-							import('@chainfuse/helpers').then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false })),
-							import('iata-location').then(({ lookupAirport }) => lookupAirport(coloToCreate.slice(0, 3).toUpperCase()) as Promise<Airport | undefined>),
-						])
-							.then(([cfApi, iataLocation]) => {
-								console.debug('iataLocation', iataLocation);
+				await import('@chainfuse/helpers')
+					.then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false }))
+					.then((cfApi) => cfApi.loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID }))
+					.then((result) => result as LoadBalancerRegionResults)
+					.then(({ regions }) =>
+						Promise.allSettled(
+							colosToCreate.map(async (coloToCreate) => {
+								const iataCode = coloToCreate.slice(0, 3).toUpperCase();
+								console.debug('Searching IATA', iataCode);
 
-								return cfApi.loadBalancers.regions.list({
-									account_id: env.CF_ACCOUNT_ID,
-									country_code_a2: iataLocation?.iso_country,
-									...(iataLocation?.iso_country &&
-										/**
-										 * Only US and Canada support `subdivision_code`
-										 * @link https://developers.cloudflare.com/load-balancing/reference/region-mapping-api/
-										 */
-										['US', 'CA'].includes(iataLocation.iso_country) && { subdivision_code: iataLocation.iso_region }),
-								});
-							})
-							.then((regionInfo) => {
-								console.debug(coloToCreate, 'Trying to create colo', regionInfo);
-							});
-					}),
-				);
+								await import('iata-location')
+									.then(({ lookupAirport }) => lookupAirport(iataCode) as Promise<Airport | undefined>)
+									.then((iataLocation) => {
+										console.debug('iataLocation', iataLocation);
+
+										if (iataLocation) {
+											// Find matching region_code by iterating over regions
+											const matchingRegion = regions.find((region) => region.countries.some((country) => country.country_code_a2.toUpperCase() === iataLocation.iso_country.toUpperCase()))?.region_code;
+
+											if (matchingRegion) {
+												console.debug('Found matching region_code:', matchingRegion);
+											} else {
+												throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
+											}
+										} else {
+											throw new Error(`No IATA location found for ${iataCode}`);
+										}
+									});
+							}),
+						).then((results) => results.filter((result) => result.status === 'rejected').map(({ reason }) => console.error(reason))),
+					);
 			} else {
 				console.debug('No colos to create');
 			}
