@@ -87,7 +87,7 @@ export default {
 				)
 				.then((response) => {
 					if (response.ok) {
-						return response.json<`${string}${number}`[]>().then((doColos) => doColos.map((doColo) => doColo.toLowerCase()));
+						return response.json<`${string}${number}`[]>().then((doColos) => Array.from(new Set(doColos.map((doColo) => doColo.slice(0, 3).toUpperCase()))));
 					} else {
 						throw new Error(`${response.status} ${response.statusText} (${response.headers.get('cf-ray')}) Failed to fetch DO colos: `);
 					}
@@ -98,50 +98,50 @@ export default {
 						doId: instances.doId,
 						location: instances.location,
 						iata: instances.iata,
-						colo: instances.colo,
 					})
 					.from(instances)
 					.$withCache()
 					.then((rows) =>
-						rows.map(({ doId, ...row }) => ({
+						rows.map((row) => ({
 							...row,
-							doId: doId.toString('hex'),
+							doId: row.doId.toString('hex'),
+							iata: row.iata.toUpperCase(),
 						})),
 					),
 			),
-		]).then(async ([doColos, instanceColos]) => {
-			const instanceFullColos = instanceColos.map((instanceColo) => `${instanceColo.iata}${instanceColo.colo.toString().padStart(2, '0')}`.toLowerCase());
-			console.debug('doColos', doColos);
-			console.debug('instanceFullColos', instanceFullColos);
-			console.debug('instanceColos', instanceColos);
+		]).then(async ([doIatas, instances]) => {
+			const instancesIatas = instances.map((instance) => instance.iata);
+			console.debug('doIatas', doIatas);
+			console.debug('instancesIatas', instancesIatas);
+			console.debug('instances', instances);
 
-			// Find colos that exist in instances but not in doColos (should be deleted)
-			const colosToDeleteStrings = instanceFullColos.filter((instanceFullColo) => !doColos.includes(instanceFullColo));
-			const colosToDelete = instanceColos.filter((instanceColo) => colosToDeleteStrings.includes(`${instanceColo.iata}${instanceColo.colo.toString().padStart(2, '0')}`.toLowerCase()));
+			// Find iatas that exist in instances but not in `doIatas` (should be deleted)
+			const iatasToDelete = instancesIatas.filter((instancesIata) => !doIatas.includes(instancesIata));
+			const instancesToDelete = instances.filter((instance) => iatasToDelete.includes(instance.iata));
 
-			if (colosToDelete.length > 0) {
-				console.warn('Deleting colos', colosToDelete);
+			if (instancesToDelete.length > 0) {
+				console.warn('Deleting iatas', instancesToDelete);
 
 				ctx.waitUntil(
 					Promise.allSettled(
-						colosToDelete.map(async (coloToDelete) => {
-							const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(coloToDelete.doId), { locationHint: coloToDelete.location });
+						instancesToDelete.map(async (instanceToDelete) => {
+							const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(instanceToDelete.doId), { locationHint: instanceToDelete.location });
 
 							await Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm'), stub.nuke()])
 								// Delete from D1
-								.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${coloToDelete.doId})`)));
+								.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${instanceToDelete.doId})`)));
 						}),
 					),
 				);
 			} else {
-				console.debug('No colos to delete');
+				console.debug('No iatas to delete');
 			}
 
-			// Find colos that don't exist in instances but do in doColos (should be created)
-			const colosToCreate = doColos.filter((doColo) => !instanceFullColos.includes(doColo));
+			// Find iatas that don't exist in instances but do in `doIatas` (should be created)
+			const iatasToCreate = doIatas.filter((doIata) => !instancesIatas.includes(doIata));
 
-			if (colosToCreate.length > 0) {
-				console.info('Creating colos', colosToCreate);
+			if (iatasToCreate.length > 0) {
+				console.info('Creating iatas', iatasToCreate);
 
 				await Promise.all([
 					import('@chainfuse/helpers')
@@ -151,9 +151,8 @@ export default {
 					import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>),
 				]).then(([{ regions }, allAirports]) =>
 					Promise.allSettled(
-						colosToCreate.map(async (coloToCreate) => {
-							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
-							const iataLocation = allAirports[iataCode];
+						iatasToCreate.map(async (iataToCreate) => {
+							const iataLocation = allAirports[iataToCreate];
 
 							if (iataLocation) {
 								// Extract subdivision code from iso_region (part after hyphen)
@@ -209,29 +208,28 @@ export default {
 
 									let created = false;
 									// 1000 request max in workers (leave 100 aside for other operations) / 2 (half because each try has to make a network request)
-									const attempts = Math.round((1000 - 100) / 2 / colosToCreate.length);
+									const attempts = Math.round((1000 - 100) / 2 / iatasToCreate.length);
 									for (let i = 0; i < attempts; i++) {
-										console.debug(`Attempt ${i}:`, 'Attempting to spawn', coloToCreate, 'in', matchingRegion);
+										console.debug(`Attempt ${i}:`, 'Attempting to spawn', iataToCreate, 'in', matchingRegion);
 
 										const doId = env.LOCATION_TESTER.newUniqueId();
 										const doStub = env.LOCATION_TESTER.get(doId, { locationHint });
 
-										const actualColo = await doStub.fullColo;
-										console.debug(`Attempt ${i}:`, 'Got', actualColo, 'expected', coloToCreate);
+										const actualIata = await doStub.iata;
+										console.debug(`Attempt ${i}:`, 'Got', actualIata, 'expected', iataToCreate);
 
-										if (actualColo?.toLowerCase() === coloToCreate.toLowerCase()) {
+										if (actualIata === iataToCreate) {
 											created = true;
 
 											// Write something to storage to lock in the colo
-											ctx.waitUntil(doStub.lockIn(coloToCreate));
+											ctx.waitUntil(doStub.lockIn(iataToCreate));
 											// Insert into D1
 											ctx.waitUntil(
 												Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm')])
 													.then(([db, { instances }, { sql }]) =>
 														db.insert(instances).values({
-															colo: parseInt(coloToCreate.slice(3), 10),
 															doId: sql<Buffer>`unhex(${doId.toString()})`,
-															iata: iataCode,
+															iata: iataToCreate,
 															iso_country: iataLocation.iso_country.toUpperCase(),
 															/**
 															 * Only the US and Canada have subdivisions
@@ -241,23 +239,23 @@ export default {
 															location: locationHint,
 														}),
 													)
-													.then(() => console.debug(`Attempt ${i}:`, 'Saved', coloToCreate))
+													.then(() => console.debug(`Attempt ${i}:`, 'Saved', iataToCreate))
 													// Something D1 failed, nuke the colo
 													.catch(() => doStub.nuke()),
 											);
 										} else {
-											console.debug(`Attempt ${i}:`, `Failed to make ${coloToCreate},`, attempts - i - 1, 'retries left');
+											console.debug(`Attempt ${i}:`, `Failed to make ${iataToCreate},`, attempts - i - 1, 'retries left');
 											// Didn't spawn where we wanted, nuke it
 											ctx.waitUntil(doStub.nuke());
 										}
 									}
 
-									if (!created) throw new Error(`Failed to create colo ${coloToCreate} after 100 attempts`);
+									if (!created) throw new Error(`Failed to create colo ${iataToCreate} after 100 attempts`);
 								} else {
-									throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
+									throw new Error(`No Cloudflare location found for ${iataToCreate} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
 								}
 							} else {
-								throw new Error(`No IATA location found for ${iataCode}`);
+								throw new Error(`No IATA location found for ${iataToCreate}`);
 							}
 						}),
 					).then((results) => results.filter((result) => result.status === 'rejected').map(({ reason }) => console.error(reason))),
