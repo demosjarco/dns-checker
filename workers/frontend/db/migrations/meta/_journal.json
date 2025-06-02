@@ -1,13 +1,13 @@
 {
-  "version": "7",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "6",
-      "when": 1748855648801,
-      "tag": "0000_mixed_multiple_man",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "6",
+			"when": 1748855648801,
+			"tag": "0000_mixed_multiple_man",
+			"breakpoints": true
+		}
+	]
 }
