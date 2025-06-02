@@ -1,5 +1,6 @@
 import { DOLocations } from '@chainfuse/types';
 import { DefaultLogger } from 'drizzle-orm/logger';
+import type { Buffer } from 'node:buffer';
 import type { EnvVars } from '~/types.js';
 import { DebugLogWriter, SQLCache } from '~db/extras.mjs';
 import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
@@ -133,7 +134,7 @@ export default {
 
 							await Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm'), stub.nuke()])
 								// Delete from D1
-								.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql`unhex(${coloToDelete.doId})`)));
+								.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${coloToDelete.doId})`)));
 						}),
 					),
 				);
