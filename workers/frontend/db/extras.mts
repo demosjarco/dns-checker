@@ -1,5 +1,6 @@
 import { is } from 'drizzle-orm';
-import { NoopCache } from 'drizzle-orm/cache/core';
+import { NoopCache, type MutationOption } from 'drizzle-orm/cache/core';
+import type { CacheConfig } from 'drizzle-orm/cache/core/types';
 import type { LogWriter } from 'drizzle-orm/logger';
 import { getTableName, Table } from 'drizzle-orm/table';
 
@@ -7,21 +8,6 @@ export class DebugLogWriter implements LogWriter {
 	write(message: string) {
 		console.debug('D1', message);
 	}
-}
-
-export interface CacheConfig {
-	/** expire time, in seconds */
-	ex?: number;
-	/** expire time, in milliseconds */
-	px?: number;
-	/** Unix time (sec) at which the key will expire */
-	exat?: number;
-	/** Unix time (ms) at which the key will expire */
-	pxat?: number;
-	/** retain existing TTL when updating a key */
-	keepTtl?: boolean;
-	/** options for HEXPIRE (hash-field TTL) */
-	hexOptions?: 'NX' | 'XX' | 'GT' | 'LT' | 'nx' | 'xx' | 'gt' | 'lt';
 }
 
 export class SQLCache extends NoopCache {
@@ -118,7 +104,7 @@ export class SQLCache extends NoopCache {
 	 * @param tags - Used for queries labeled with a specific tag, allowing you to invalidate by that tag.
 	 * @param tables - The actual tables affected by the insert, update, or delete statements, helping you track which tables have changed since the last cache update.
 	 */
-	override async onMutate(params: { tags: string | string[]; tables: string | string[] | Table<any> | Table<any>[] }): Promise<void> {
+	override async onMutate(params: MutationOption): Promise<void> {
 		const tagsArray = params.tags ? (Array.isArray(params.tags) ? params.tags : [params.tags]) : [];
 		const tablesArray = params.tables ? (Array.isArray(params.tables) ? params.tables : [params.tables]) : [];
 		const keysToDelete = new Set<string>();
