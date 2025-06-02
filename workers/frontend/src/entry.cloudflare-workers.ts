@@ -110,7 +110,7 @@ export default {
 					),
 			),
 		]).then(async ([doColos, instanceColos]) => {
-			const instanceFullColos = instanceColos.map((instanceColo) => `${instanceColo.iata}${instanceColo.colo}`.toLowerCase());
+			const instanceFullColos = instanceColos.map((instanceColo) => `${instanceColo.iata}${instanceColo.colo.toString().padStart(2, '0')}`.toLowerCase());
 			console.debug('doColos', doColos);
 			console.debug('instanceFullColos', instanceFullColos);
 			console.debug('instanceColos', instanceColos);
