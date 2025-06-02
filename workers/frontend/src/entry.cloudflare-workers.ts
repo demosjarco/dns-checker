@@ -10,14 +10,14 @@ export { LocationTester } from '~do/locationTester.mjs';
  * Temporary
  * @link https://github.com/elsbrock/iata-location/issues/3
  */
-// interface Airport {
-// 	latitude_deg: string;
-// 	longitude_deg: string;
-// 	iso_country: string;
-// 	iso_region: `${string}-${string}`;
-// 	municipality: string;
-// 	iata_code: string;
-// }
+interface Airport {
+	latitude_deg: string;
+	longitude_deg: string;
+	iso_country: string;
+	iso_region: `${string}-${string}`;
+	municipality: string;
+	iata_code: string;
+}
 
 /**
  * Missing from ts type
@@ -151,29 +151,28 @@ export default {
 						.then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false }))
 						.then((cfApi) => cfApi.loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID }))
 						.then((result) => result as LoadBalancerRegionResults),
-					import('iata-location/data').then(({ default: allAirports }) => console.debug('allAirports', allAirports)),
-				]).then(() =>
+					import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>),
+				]).then(([{ regions }, allAirports]) =>
 					Promise.allSettled(
 						colosToCreate.map((coloToCreate) => {
 							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
 							console.debug('Searching IATA', iataCode);
 
-							// .then((iataLocation) => {
-							// 	console.debug('iataLocation', iataLocation);
+							const iataLocation = allAirports[iataCode];
+							console.debug('iataLocation', iataLocation);
 
-							// 	if (iataLocation) {
-							// 		// Find matching region_code by iterating over regions
-							// 		const matchingRegion = regions.find((region) => region.countries.some((country) => country.country_code_a2.toUpperCase() === iataLocation.iso_country.toUpperCase()))?.region_code;
+							if (iataLocation) {
+								// Find matching region_code by iterating over regions
+								const matchingRegion = regions.find((region) => region.countries.some((country) => country.country_code_a2.toUpperCase() === iataLocation.iso_country.toUpperCase()))?.region_code;
 
-							// 		if (matchingRegion) {
-							// 			console.debug('Found matching region_code:', matchingRegion);
-							// 		} else {
-							// 			throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
-							// 		}
-							// 	} else {
-							// 		throw new Error(`No IATA location found for ${iataCode}`);
-							// 	}
-							// });
+								if (matchingRegion) {
+									console.debug('Found matching region_code:', matchingRegion);
+								} else {
+									throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
+								}
+							} else {
+								throw new Error(`No IATA location found for ${iataCode}`);
+							}
 						}),
 					).then((results) => results.filter((result) => result.status === 'rejected').map(({ reason }) => console.error(reason))),
 				);
