@@ -10,7 +10,7 @@ export default component$(() => {
 	const expected = loc.url.searchParams.get('expected') ?? '';
 
 	return (
-		<div class="w-full border-b border-gray-100 bg-gray-50 px-8 py-6 shadow-2xl dark:border-gray-800 dark:bg-gray-950">
+		<div class="w-full bg-gray-50 px-8 py-6 shadow-2xl dark:bg-gray-950">
 			<h1 class="mb-2 text-center text-2xl font-bold text-gray-800 dark:text-gray-100">DNS Record Checker</h1>
 			<p class="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">Check DNS records for any domain or subdomain</p>
 
