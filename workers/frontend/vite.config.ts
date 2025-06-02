@@ -2,6 +2,7 @@ import { qwikCity, type QwikCityVitePluginOptions } from '@builder.io/qwik-city/
 import { qwikVite } from '@builder.io/qwik/optimizer';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import tailwindcss from '@tailwindcss/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, type UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -10,8 +11,9 @@ const cloudflareNodeRuntimes: `node:${string}`[] = ['node:assert', 'node:async_h
 const cloudflareRuntimes: `cloudflare:${string}`[] = ['cloudflare:email', 'cloudflare:workers', 'cloudflare:sockets'];
 
 let platform: QwikCityVitePluginOptions['platform'] = {};
+const isLocal = process.env['GITHUB_ACTIONS'] !== 'true' && process.env['GIT_HASH'] === undefined;
 
-if (process.env['GITHUB_ACTIONS'] !== 'true' && process.env['GIT_HASH'] === undefined) {
+if (isLocal) {
 	await import('wrangler').then(({ getPlatformProxy }) =>
 		getPlatformProxy().then((proxy) => {
 			platform = proxy;
@@ -34,6 +36,15 @@ export default defineConfig((): UserConfig => {
 				modulesOnly: true,
 				preferBuiltins: true,
 			}),
+			...(isLocal
+				? [
+						visualizer({
+							template: 'sunburst',
+							gzipSize: true,
+							brotliSize: true,
+						}),
+					]
+				: []),
 		],
 		server: {
 			headers: {
