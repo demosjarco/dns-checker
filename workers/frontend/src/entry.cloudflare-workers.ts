@@ -40,6 +40,7 @@ export default {
 			import('@chainfuse/helpers')
 				.then(({ NetHelpers }) =>
 					NetHelpers.loggingFetch(new URL('colo-route/colos', 'https://colo-route.jross.dev'), {
+						logging: { level: 1, color: false },
 						cf: {
 							cacheTtlByStatus: {
 								// Cache until 15 minutes before next GMT midnight
