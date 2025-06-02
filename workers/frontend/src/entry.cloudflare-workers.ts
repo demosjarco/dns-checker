@@ -25,9 +25,11 @@ export default {
 	 */
 	fetch: assetFetch,
 	async scheduled(event, env, ctx) {
+		const d1Session = env.PROBE_DB.withSession('first-unconstrained');
+
 		function drizzleRef(dbRef: D1Database = env.PROBE_DB) {
 			return import('drizzle-orm/d1').then(({ drizzle }) =>
-				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession('first-unconstrained') as unknown as D1Database) : dbRef, {
+				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
 					// @ts-expect-error We're using coop cache (drizzle needs to fix types)
