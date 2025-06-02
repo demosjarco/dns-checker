@@ -117,10 +117,7 @@ export default {
 
 			// Find colos that exist in instances but not in doColos (should be deleted)
 			const colosToDeleteStrings = instanceFullColos.filter((instanceFullColo) => !doColos.includes(instanceFullColo));
-			const colosToDelete = instanceColos.filter((instanceColo) => {
-				const instanceFullColo = `${instanceColo.iata}${instanceColo.colo}`.toLowerCase();
-				return colosToDeleteStrings.includes(instanceFullColo);
-			});
+			const colosToDelete = instanceColos.filter((instanceColo) => colosToDeleteStrings.includes(`${instanceColo.iata}${instanceColo.colo.toString().padStart(2, '0')}`.toLowerCase()));
 
 			if (colosToDelete.length > 0) {
 				console.warn('Deleting colos', colosToDelete);
