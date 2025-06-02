@@ -212,7 +212,7 @@ export default {
 
 									let created = false;
 									// 1000 (leave 100 aside for other operations)
-									const attempts = 900 / colosToCreate.length;
+									const attempts = Math.round(900 / colosToCreate.length);
 									for (let i = 0; i < attempts; i++) {
 										console.debug(`Attempt ${i}:`, 'Attempting to spawn', coloToCreate, 'in', matchingRegion);
 
