@@ -40,6 +40,8 @@
 	},
 	"engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime",
 	"dependencies": {
+		"@chainfuse/types": "^2.10.18",
+		"drizzle-orm": "^0.44.1",
 		"iata-location": "^1.0.1"
 	},
 	"devDependencies": {
@@ -47,6 +49,7 @@
 		"@builder.io/qwik-city": "^1.14.1",
 		"@rollup/plugin-node-resolve": "^16.0.1",
 		"@tailwindcss/vite": "^4.1.8",
+		"drizzle-kit": "^0.31.1",
 		"eslint-plugin-qwik": "^1.14.1",
 		"flowbite": "^3.1.2",
 		"prettier-plugin-tailwindcss": "^0.6.12",
