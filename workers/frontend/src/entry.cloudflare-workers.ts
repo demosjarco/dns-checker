@@ -132,8 +132,10 @@ export default {
 							import('@chainfuse/helpers').then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false })),
 							import('iata-location').then(({ lookupAirport }) => lookupAirport(coloToCreate.slice(0, 3).toUpperCase()) as Promise<Airport | undefined>),
 						])
-							.then(([cfApi, iataLocation]) =>
-								cfApi.loadBalancers.regions.list({
+							.then(([cfApi, iataLocation]) => {
+								console.debug('iataLocation', iataLocation);
+
+								return cfApi.loadBalancers.regions.list({
 									account_id: env.CF_ACCOUNT_ID,
 									country_code_a2: iataLocation?.iso_country,
 									...(iataLocation?.iso_country &&
@@ -142,10 +144,10 @@ export default {
 										 * @link https://developers.cloudflare.com/load-balancing/reference/region-mapping-api/
 										 */
 										['US', 'CA'].includes(iataLocation.iso_country) && { subdivision_code: iataLocation.iso_region }),
-								}),
-							)
+								});
+							})
 							.then((regionInfo) => {
-								console.debug('Trying to create colo', regionInfo);
+								console.debug(coloToCreate, 'Trying to create colo', regionInfo);
 							});
 					}),
 				);
