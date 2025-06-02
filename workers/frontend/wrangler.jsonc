@@ -11,6 +11,12 @@
 	"minify": true,
 	"upload_source_maps": true,
 	"observability": { "enabled": true },
+	"triggers": {
+		"crons": [
+			// "0 0 * * *"
+			"*/5 * * * *"
+		]
+	},
 	"vars": {
 		"ENVIRONMENT": "production",
 		"NODE_ENV": "production"
