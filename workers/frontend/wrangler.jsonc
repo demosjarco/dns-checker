@@ -20,12 +20,7 @@
 			"fallthrough": true
 		}
 	],
-	"triggers": {
-		"crons": [
-			// "0 * * * *"
-			"*/5 * * * *"
-		]
-	},
+	"triggers": { "crons": ["*/5 * * * *"] },
 	"vars": {
 		"ENVIRONMENT": "production",
 		"NODE_ENV": "production",
