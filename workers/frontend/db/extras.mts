@@ -1,7 +1,7 @@
-import { is } from 'drizzle-orm';
 import { CryptoHelpers } from '@chainfuse/helpers';
 import { Cache as DrizzleCache, type MutationOption } from 'drizzle-orm/cache/core';
 import type { CacheConfig } from 'drizzle-orm/cache/core/types';
+import { is } from 'drizzle-orm/entity';
 import type { LogWriter } from 'drizzle-orm/logger';
 import { getTableName, Table } from 'drizzle-orm/table';
 
