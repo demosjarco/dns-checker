@@ -31,7 +31,7 @@ jobs:
           cache: 'npm'
       - run: npm ci --ignore-scripts --include-workspace-root --workspace frontend
       - run: npm run-script install --if-present --include-workspace-root --workspace frontend
-      - run: npm --workspace frontend run build.types.cf
+      - run: npm --workspace frontend run build:types:cf
       - run: npm --workspace frontend run fmt:fix
       - name: Git Setup
         run: |

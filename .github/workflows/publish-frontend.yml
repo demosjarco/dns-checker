@@ -55,7 +55,7 @@ jobs:
           restore-keys: |
             qwik-s-
           enableCrossOsArchive: true
-      - run: npm --workspace frontend run build.types
+      - run: npm --workspace frontend run build:types
       - name: Save TS cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -70,9 +70,9 @@ jobs:
             workers/frontend/dist/**
           key: qwik-c-${{ hashFiles('workers/frontend/src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
           enableCrossOsArchive: true
-      - run: npm --workspace frontend run build.client
+      - run: npm --workspace frontend run build:client
         timeout-minutes: 1
-        continue-on-error: true # TODO: remove once `build.client` stops hanging
+        continue-on-error: true # TODO: remove once `build:client` stops hanging
       - name: Save client cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
@@ -80,9 +80,9 @@ jobs:
             workers/frontend/dist/**
           key: qwik-c-${{ hashFiles('workers/frontend/src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
           enableCrossOsArchive: true
-      - run: npm --workspace frontend run build.server
+      - run: npm --workspace frontend run build:server
         timeout-minutes: 1
-        continue-on-error: true # TODO: remove once `build.server` stops hanging
+        continue-on-error: true # TODO: remove once `build:server` stops hanging
       - name: Save server cache
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
