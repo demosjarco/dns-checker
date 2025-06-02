@@ -36,5 +36,5 @@ export const instances = sqliteTable(
 		iso_country: i.text({ mode: 'text' }).notNull(),
 		iso_region: i.text({ mode: 'text' }).notNull(),
 	}),
-	(i) => [unique().on(i.location, i.colo)],
+	(i) => [unique().on(i.iata, i.colo)],
 );
