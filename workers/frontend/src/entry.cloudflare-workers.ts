@@ -112,6 +112,7 @@ export default {
 		]).then(async ([doColos, instanceColos]) => {
 			const instanceFullColos = instanceColos.map((instanceColo) => `${instanceColo.iata}${instanceColo.colo}`.toLowerCase());
 			console.debug('doColos', doColos);
+			console.debug('instanceFullColos', instanceFullColos);
 			console.debug('instanceColos', instanceColos);
 
 			// Find colos that exist in instances but not in doColos (should be deleted)
