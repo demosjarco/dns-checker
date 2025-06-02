@@ -25,12 +25,12 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 		super(ctx, env);
 
 		ctx.waitUntil(
-			this.ctx.storage.getAlarm().then((alarm) => {
+			this.ctx.storage.getAlarm().then(async (alarm) => {
 				if (!alarm) {
 					// Calculate next GMT midnight
 					const now = new Date();
 					const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
-					return this.ctx.storage.setAlarm(nextGMTMidnight);
+					await this.ctx.storage.setAlarm(nextGMTMidnight);
 				}
 			}),
 		);
