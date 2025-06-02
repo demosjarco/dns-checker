@@ -141,5 +141,34 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 				this.ctx.waitUntil(this.nuke());
 			}
 		});
+
+		// Self nuke if not recorded in D1 (prevent hanging DOs)
+		await Promise.all([this.drizzleRef(), import('../db/schema'), import('drizzle-orm')])
+			// Delete from D1
+			.then(([db, { instances }, { eq, sql }]) =>
+				db
+					.select({
+						doId: instances.doId,
+					})
+					.from(instances)
+					.where(eq(instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
+					.limit(1),
+			)
+			.then((rows) =>
+				rows.map(({ doId, ...row }) => ({
+					...row,
+					doId: doId.toString('hex'),
+				})),
+			)
+			.then(([row]) => {
+				if (!row) {
+					this.ctx.waitUntil(
+						Promise.all([this.drizzleRef(), import('../db/schema'), import('drizzle-orm')])
+							// Delete from D1
+							.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`))),
+					);
+					this.ctx.waitUntil(this.nuke());
+				}
+			});
 	}
 }
