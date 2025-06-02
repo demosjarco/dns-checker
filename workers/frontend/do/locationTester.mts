@@ -128,6 +128,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 		const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
 		this.ctx.waitUntil(this.ctx.storage.setAlarm(nextGMTMidnight));
 
+		// Self nuke if no longer in original location
 		await Promise.all([this.ctx.storage.get<string>('colo'), this.fullColo]).then(([storedColo, currentColo]) => {
 			if (storedColo?.toLowerCase() === currentColo?.toLowerCase()) {
 				console.debug('Verified', storedColo, "hasn't moved");
