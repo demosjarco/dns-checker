@@ -13,13 +13,13 @@
 	"observability": { "enabled": true },
 	"find_additional_modules": true,
 	"base_dir": "../..",
-	// "rules": [
-	// 	{
-	// 		"type": "CommonJS",
-	// 		"globs": ["node_modules/iata-location/dist/data/**/*.js"],
-	// 		"fallthrough": true
-	// 	}
-	// ],
+	"rules": [
+		{
+			"type": "CommonJS",
+			"globs": ["node_modules/iata-location/dist/data/*/*.js"],
+			"fallthrough": true
+		}
+	],
 	"triggers": {
 		"crons": [
 			// "0 0 * * *"
