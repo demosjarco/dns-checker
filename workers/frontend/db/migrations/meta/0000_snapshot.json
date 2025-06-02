@@ -1,0 +1,129 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "b0abe96e-157a-484c-887f-9a3d5aa68a64",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "instances": {
+      "name": "instances",
+      "columns": {
+        "do_id": {
+          "name": "do_id",
+          "type": "blob",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "do_id_hex": {
+          "name": "do_id_hex",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "generated": {
+            "as": "(lower(hex(\"do_id\")))",
+            "type": "virtual"
+          }
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "iata": {
+          "name": "iata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "iso_country": {
+          "name": "iso_country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "iso_region": {
+          "name": "iso_region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "instances_iata_unique": {
+          "name": "instances_iata_unique",
+          "columns": [
+            "iata"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "instances_location_locations_location_fk": {
+          "name": "instances_location_locations_location_fk",
+          "tableFrom": "instances",
+          "tableTo": "locations",
+          "columnsFrom": [
+            "location"
+          ],
+          "columnsTo": [
+            "location"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "locations": {
+      "name": "locations",
+      "columns": {
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "case_insensitive_location": {
+          "name": "case_insensitive_location",
+          "columns": [
+            "lower(\"location\")"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "case_insensitive_location": {
+        "columns": {
+          "lower(\"location\")": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}
