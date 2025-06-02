@@ -6,6 +6,7 @@ import { sqliteTable, unique, uniqueIndex, type AnySQLiteColumn } from 'drizzle-
  * @returns a copy of string `x` with all ASCII characters converted to lower case
  * @link https://sqlite.org/lang_corefunc.html#lower
  */
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint
 function lower<T extends unknown = string>(x: AnySQLiteColumn) {
 	return sql<T>`lower(${x})`;
 }
