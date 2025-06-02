@@ -116,7 +116,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 			drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession('first-unconstrained') as unknown as D1Database) : dbRef, {
 				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 				casing: 'snake_case',
-				cache: new SQLCache(parseInt(this.env.SQL_TTL, 10)),
+				cache: new SQLCache('dns-probe', 'd1', parseInt(this.env.SQL_TTL, 10), 'all'),
 			}),
 		);
 	}
