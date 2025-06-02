@@ -1,6 +1,6 @@
 import { DOLocations } from '@chainfuse/types';
 import type { Buffer } from 'node:buffer';
-import type { EnvVars } from '~/types.js';
+import { PROBE_DB_D1_ID, type EnvVars } from '~/types.js';
 import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
 
 export { LocationTester } from '~do/locationTester.mjs';
@@ -53,7 +53,7 @@ export default {
 				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
-					cache: new SQLCache('deb65f23-6198-4911-85b8-d48810a080cc', 'd1', parseInt(env.SQL_TTL, 10), 'all'),
+					cache: new SQLCache(PROBE_DB_D1_ID, 'd1', parseInt(env.SQL_TTL, 10), 'all'),
 				}),
 			);
 		}
