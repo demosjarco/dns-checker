@@ -179,7 +179,6 @@ export default {
 								)?.region_code;
 
 								if (matchingRegion) {
-									console.debug(iataCode, iataLocation, matchingRegion);
 									const locationHint: DOLocations = (() => {
 										switch (matchingRegion) {
 											case 'EEU':
