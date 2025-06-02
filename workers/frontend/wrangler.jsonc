@@ -28,6 +28,13 @@
 			}
 		]
 	},
+	"d1_databases": [
+		{
+			"binding": "PROBE_DB",
+			"database_name": "dns-probe",
+			"database_id": "6d73e12f-0ccc-4c74-be05-e70e981eb1cd"
+		}
+	],
 	"migrations": [
 		{
 			"tag": "6de84bb",
