@@ -1,5 +1,5 @@
 import { component$, Slot } from '@builder.io/qwik';
-import type { RequestHandler } from '@builder.io/qwik-city';
+import { routeLoader$, type RequestHandler } from '@builder.io/qwik-city';
 
 export const onGet: RequestHandler = ({ cacheControl }) => {
 	// Control caching for this request for best performance and to reduce hosting costs:
@@ -11,6 +11,10 @@ export const onGet: RequestHandler = ({ cacheControl }) => {
 		maxAge: 5,
 	});
 };
+
+export const useGitHash = routeLoader$(({ platform }) => platform.env.GIT_HASH);
+
+export const useWorkerMetadata = routeLoader$(({ platform }) => platform.env.CF_VERSION_METADATA);
 
 export default component$(() => {
 	return <Slot />;
