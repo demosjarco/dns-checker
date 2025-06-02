@@ -27,7 +27,7 @@ interface LoadBalancerRegionResults {
 	regions: LoadBalancerRegion[];
 }
 interface LoadBalancerRegion {
-	region_code: string;
+	region_code: 'EEU' | 'ENAM' | 'ME' | 'NAF' | 'NEAS' | 'NSAM' | 'OC' | 'SAF' | 'SAS' | 'SEAS' | 'SSAM' | 'WEU' | 'WNAM';
 	countries: LoadBalancerCountry[];
 }
 interface LoadBalancerCountry {
