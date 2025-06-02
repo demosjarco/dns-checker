@@ -156,7 +156,7 @@ export default {
 					import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>),
 				]).then(([{ regions }, allAirports]) =>
 					Promise.allSettled(
-						colosToCreate.map((coloToCreate) => {
+						colosToCreate.map(async (coloToCreate) => {
 							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
 							const iataLocation = allAirports[iataCode];
 
@@ -182,6 +182,79 @@ export default {
 
 								if (matchingRegion) {
 									console.debug(iataCode, iataLocation, matchingRegion);
+									const locationHint: DOLocations = (() => {
+										switch (matchingRegion) {
+											case 'EEU':
+												return DOLocations['Eastern Europe'];
+											case 'ENAM':
+												return DOLocations['Eastern North America'];
+											case 'ME':
+												return DOLocations['Middle East'];
+											case 'NAF':
+												return DOLocations.Africa;
+											case 'NEAS':
+												return DOLocations['Asia-Pacific'];
+											case 'NSAM':
+												return DOLocations['South America'];
+											case 'OC':
+												return DOLocations.Oceania;
+											case 'SAF':
+												return DOLocations.Africa;
+											case 'SAS':
+												return DOLocations['Asia-Pacific'];
+											case 'SEAS':
+												return DOLocations['Asia-Pacific'];
+											case 'SSAM':
+												return DOLocations['South America'];
+											case 'WEU':
+												return DOLocations['Western Europe'];
+											case 'WNAM':
+												return DOLocations['Western North America'];
+										}
+									})();
+
+									let created = false;
+									// Let's try 100 times to create a colo
+									const attempts = 100;
+									for (let i = 0; i < attempts; i++) {
+										console.debug(`Attempt ${i}:`, 'Attempting to spawn', coloToCreate, 'in', matchingRegion);
+
+										const doId = env.LOCATION_TESTER.newUniqueId();
+										const doStub = env.LOCATION_TESTER.get(doId, { locationHint });
+
+										const actualColo = await doStub.fullColo;
+										console.debug(`Attempt ${i}:`, 'Got', actualColo, 'expected', coloToCreate);
+
+										if (actualColo?.toLowerCase() === coloToCreate.toLowerCase()) {
+											created = true;
+
+											// Write something to storage to lock in the colo
+											ctx.waitUntil(doStub.lockIn(coloToCreate));
+											// Insert into D1
+											ctx.waitUntil(
+												Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm')])
+													.then(([db, { instances }, { sql }]) =>
+														db.insert(instances).values({
+															colo: parseInt(coloToCreate.slice(3), 10),
+															doId: sql<Buffer>`unhex(${doId.toString()})`,
+															iata: iataCode,
+															iso_country: iataLocation.iso_country.toUpperCase(),
+															iso_region: iataLocation.iso_region.split('-')[1]!.toUpperCase(),
+															location: locationHint,
+														}),
+													)
+													.then(() => console.debug(`Attempt ${i}:`, 'Saved', coloToCreate))
+													// Something D1 failed, nuke the colo
+													.catch(() => doStub.nuke()),
+											);
+										} else {
+											console.debug(`Attempt ${i}:`, `Failed to make ${coloToCreate},`, attempts - i - 1, 'retries left');
+											// Didn't spawn where we wanted, nuke it
+											ctx.waitUntil(doStub.nuke());
+										}
+									}
+
+									if (!created) throw new Error(`Failed to create colo ${coloToCreate} after 100 attempts`);
 								} else {
 									throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
 								}
