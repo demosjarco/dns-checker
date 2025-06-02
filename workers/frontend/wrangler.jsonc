@@ -16,7 +16,7 @@
 	"rules": [
 		{
 			"type": "CommonJS",
-			"globs": ["node_modules/iata-location/dist/data/*/*.js"],
+			"globs": ["node_modules/iata-location/dist/data/*.js"],
 			"fallthrough": true
 		}
 	],

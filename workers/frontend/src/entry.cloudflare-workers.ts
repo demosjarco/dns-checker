@@ -10,14 +10,14 @@ export { LocationTester } from '~do/locationTester.mjs';
  * Temporary
  * @link https://github.com/elsbrock/iata-location/issues/3
  */
-interface Airport {
-	latitude_deg: string;
-	longitude_deg: string;
-	iso_country: string;
-	iso_region: `${string}-${string}`;
-	municipality: string;
-	iata_code: string;
-}
+// interface Airport {
+// 	latitude_deg: string;
+// 	longitude_deg: string;
+// 	iso_country: string;
+// 	iso_region: `${string}-${string}`;
+// 	municipality: string;
+// 	iata_code: string;
+// }
 
 /**
  * Missing from ts type
@@ -146,37 +146,37 @@ export default {
 			if (colosToCreate.length > 0) {
 				console.info('Creating colos', colosToCreate);
 
-				await import('@chainfuse/helpers')
-					.then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false }))
-					.then((cfApi) => cfApi.loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID }))
-					.then((result) => result as LoadBalancerRegionResults)
-					.then(({ regions }) =>
-						Promise.allSettled(
-							colosToCreate.map(async (coloToCreate) => {
-								const iataCode = coloToCreate.slice(0, 3).toUpperCase();
-								console.debug('Searching IATA', iataCode);
+				await Promise.all([
+					import('@chainfuse/helpers')
+						.then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false }))
+						.then((cfApi) => cfApi.loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID }))
+						.then((result) => result as LoadBalancerRegionResults),
+					import('iata-location/data').then(({ default: allAirports }) => console.debug('allAirports', allAirports)),
+				]).then(() =>
+					Promise.allSettled(
+						colosToCreate.map(async (coloToCreate) => {
+							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
+							console.debug('Searching IATA', iataCode);
 
-								await import('iata-location')
-									.then(({ lookupAirport }) => lookupAirport(iataCode) as Promise<Airport | undefined>)
-									.then((iataLocation) => {
-										console.debug('iataLocation', iataLocation);
+							// .then((iataLocation) => {
+							// 	console.debug('iataLocation', iataLocation);
 
-										if (iataLocation) {
-											// Find matching region_code by iterating over regions
-											const matchingRegion = regions.find((region) => region.countries.some((country) => country.country_code_a2.toUpperCase() === iataLocation.iso_country.toUpperCase()))?.region_code;
+							// 	if (iataLocation) {
+							// 		// Find matching region_code by iterating over regions
+							// 		const matchingRegion = regions.find((region) => region.countries.some((country) => country.country_code_a2.toUpperCase() === iataLocation.iso_country.toUpperCase()))?.region_code;
 
-											if (matchingRegion) {
-												console.debug('Found matching region_code:', matchingRegion);
-											} else {
-												throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
-											}
-										} else {
-											throw new Error(`No IATA location found for ${iataCode}`);
-										}
-									});
-							}),
-						).then((results) => results.filter((result) => result.status === 'rejected').map(({ reason }) => console.error(reason))),
-					);
+							// 		if (matchingRegion) {
+							// 			console.debug('Found matching region_code:', matchingRegion);
+							// 		} else {
+							// 			throw new Error(`No Cloudflare location found for ${iataCode} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
+							// 		}
+							// 	} else {
+							// 		throw new Error(`No IATA location found for ${iataCode}`);
+							// 	}
+							// });
+						}),
+					).then((results) => results.filter((result) => result.status === 'rejected').map(({ reason }) => console.error(reason))),
+				);
 			} else {
 				console.debug('No colos to create');
 			}
