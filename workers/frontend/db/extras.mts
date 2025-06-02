@@ -1,4 +1,5 @@
 import { is } from 'drizzle-orm';
+import { CryptoHelpers } from '@chainfuse/helpers';
 import { Cache as DrizzleCache, type MutationOption } from 'drizzle-orm/cache/core';
 import type { CacheConfig } from 'drizzle-orm/cache/core/types';
 import type { LogWriter } from 'drizzle-orm/logger';
@@ -107,7 +108,7 @@ export class SQLCache extends DrizzleCache {
 			},
 		});
 
-		cacheRequest.headers.set('ETag', await import('@chainfuse/helpers').then(({ CryptoHelpers }) => CryptoHelpers.generateETag(cacheRequest)));
+		cacheRequest.headers.set('ETag', await CryptoHelpers.generateETag(cacheRequest));
 
 		await this.cache.then(async (cache) => cache.put(this.getCacheKey(isTag ? { tag: hashedQuery } : { key: hashedQuery }), cacheRequest)).then(() => console.debug('SQLCache.put', isTag ? 'tag' : 'key', hashedQuery, 'SUCCESS'));
 
