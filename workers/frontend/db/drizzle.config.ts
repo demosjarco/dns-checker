@@ -1,4 +1,5 @@
 import { defineConfig } from 'drizzle-kit';
+import { PROBE_DB_D1_ID } from '~/types';
 
 export default defineConfig({
 	dialect: 'sqlite',
@@ -8,7 +9,7 @@ export default defineConfig({
 	out: './db/migrations',
 	dbCredentials: {
 		accountId: process.env['CF_ACCOUNT_ID']!,
-		databaseId: 'deb65f23-6198-4911-85b8-d48810a080cc',
+		databaseId: PROBE_DB_D1_ID,
 		token: process.env['DB_MIGRATE_CF_API_TOKEN']!,
 	},
 });
