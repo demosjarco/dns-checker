@@ -48,7 +48,7 @@
 		{
 			"binding": "PROBE_DB",
 			"database_name": "dns-probe",
-			"database_id": "6d73e12f-0ccc-4c74-be05-e70e981eb1cd",
+			"database_id": "7a33b743-c9ee-4174-85ff-33c7510b9bdc",
 			"migrations_dir": "db/migrations"
 		}
 	],
