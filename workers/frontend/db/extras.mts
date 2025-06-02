@@ -1,5 +1,5 @@
 import { is } from 'drizzle-orm';
-import { NoopCache, type MutationOption } from 'drizzle-orm/cache/core';
+import { Cache, type MutationOption } from 'drizzle-orm/cache/core';
 import type { CacheConfig } from 'drizzle-orm/cache/core/types';
 import type { LogWriter } from 'drizzle-orm/logger';
 import { getTableName, Table } from 'drizzle-orm/table';
@@ -10,18 +10,16 @@ export class DebugLogWriter implements LogWriter {
 	}
 }
 
-export class SQLCache extends NoopCache {
-	private ctx?: ExecutionContext;
+export class SQLCache extends Cache {
 	private globalTtl: number;
 	// This object will be used to store which query keys were used
 	// for a specific table, so we can later use it for invalidation.
 	private usedTablesPerKey: Record<string, string[]> = {};
 	private cache = caches.open('d1:dns-probe');
 
-	constructor(cacheTTL: number, ctx?: ExecutionContext) {
+	constructor(cacheTTL: number) {
 		super();
 
-		this.ctx = ctx;
 		this.globalTtl = cacheTTL;
 	}
 
@@ -31,8 +29,8 @@ export class SQLCache extends NoopCache {
 	 * - 'all': All queries are cached globally.
 	 * @default 'explicit'
 	 */
-	override strategy() {
-		return 'all' as const;
+	override strategy(): 'explicit' | 'all' {
+		return 'all';
 	}
 
 	private static getCacheKey(key: string, init?: ConstructorParameters<typeof Request>[1]) {
@@ -43,10 +41,10 @@ export class SQLCache extends NoopCache {
 	 * This function accepts query and parameters that cached into key param, allowing you to retrieve response values for this query from the cache.
 	 * @param key - A hashed query and parameters.
 	 */
-	override async get(key: string): Promise<any[] | undefined> {
+	override async get(key: string, tables: string[], isTag: boolean, isAutoInvalidate?: boolean): Promise<any[] | undefined> {
 		const response = await this.cache.then(async (cache) => cache.match(SQLCache.getCacheKey(key)));
 
-		console.debug('SQLCache.get', key, response ? 'HIT' : 'MISS');
+		console.debug('SQLCache.get', key, response?.ok ? 'HIT' : 'MISS');
 
 		if (response) {
 			return response.json();
@@ -64,28 +62,19 @@ export class SQLCache extends NoopCache {
 	 * For example, if a query uses the "users" and "posts" tables, you can store this information. Later, when the app executes any mutation statements on these tables, you can remove the corresponding key from the cache.
 	 * If you're okay with eventual consistency for your queries, you can skip this option.
 	 */
-	override async put(hashedQuery: string, response: any, tables: string[], config?: CacheConfig): Promise<void> {
-		const cacheBody = JSON.stringify(response);
+	override async put(hashedQuery: string, response: any, tables: string[], isTag: boolean, config?: CacheConfig): Promise<void> {
+		const cacheRequest = new Response(JSON.stringify(response), {
+			headers: {
+				'Content-Type': 'application/json',
+				'Cache-Control': `public, max-age=${config?.ex ?? this.globalTtl}, s-maxage=${config?.ex ?? this.globalTtl}`,
+			},
+		});
 
-		const promise = this.cache
-			.then(async (cache) =>
-				cache.put(
-					SQLCache.getCacheKey(hashedQuery),
-					new Response(cacheBody, {
-						headers: {
-							ETag: await import('@chainfuse/helpers').then(({ CryptoHelpers }) => CryptoHelpers.generateETag(new Response(cacheBody))),
-							'Content-Type': 'application/json',
-							'Cache-Control': `public, max-age=${config?.ex ?? this.globalTtl}, s-maxage=${config?.ex ?? this.globalTtl}`,
-						},
-					}),
-				),
-			)
-			.then(() => console.debug('SQLCache.put', hashedQuery, 'SUCCESS'));
-		if (this.ctx && typeof this.ctx.waitUntil === 'function') {
-			this.ctx.waitUntil(promise);
-		} else {
-			await promise;
-		}
+		cacheRequest.headers.set('ETag', await import('@chainfuse/helpers').then(({ CryptoHelpers }) => CryptoHelpers.generateETag(cacheRequest)));
+
+		console.debug('SQLCache', 'putting', cacheRequest);
+
+		await this.cache.then(async (cache) => cache.put(SQLCache.getCacheKey(hashedQuery), cacheRequest)).then(() => console.debug('SQLCache.put', hashedQuery, 'SUCCESS'));
 
 		for (const table of tables) {
 			const keys = this.usedTablesPerKey[table];
@@ -115,20 +104,10 @@ export class SQLCache extends NoopCache {
 		}
 		if (keysToDelete.size > 0 || tagsArray.length > 0) {
 			for (const tag of tagsArray) {
-				const promise = this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey(tag))).then(() => console.debug('SQLCache.delete', tag, 'SUCCESS'));
-				if (this.ctx && typeof this.ctx.waitUntil === 'function') {
-					this.ctx.waitUntil(promise);
-				} else {
-					await promise;
-				}
+				await this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey(tag))).then(() => console.debug('SQLCache.delete', tag, 'SUCCESS'));
 			}
 			for (const key of keysToDelete) {
-				const promise = this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey(key))).then(() => console.debug('SQLCache.delete', key, 'SUCCESS'));
-				if (this.ctx && typeof this.ctx.waitUntil === 'function') {
-					this.ctx.waitUntil(promise);
-				} else {
-					await promise;
-				}
+				await this.cache.then(async (cache) => cache.delete(SQLCache.getCacheKey(key))).then(() => console.debug('SQLCache.delete', key, 'SUCCESS'));
 
 				for (const table of tablesArray) {
 					const tableName = is(table, Table) ? getTableName(table) : (table as string);
