@@ -1,8 +1,6 @@
 import { DOLocations } from '@chainfuse/types';
-import { DefaultLogger } from 'drizzle-orm/logger';
 import type { Buffer } from 'node:buffer';
 import type { EnvVars } from '~/types.js';
-import { DebugLogWriter, SQLCache } from '~db/extras.mjs';
 import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
 
 export { LocationTester } from '~do/locationTester.mjs';
@@ -51,7 +49,7 @@ export default {
 		const d1Session = env.PROBE_DB.withSession('first-unconstrained');
 
 		function drizzleRef() {
-			return import('drizzle-orm/d1').then(({ drizzle }) =>
+			return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras.mjs')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
 				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
