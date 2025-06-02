@@ -1,4 +1,4 @@
-import { DOLocations } from '@chainfuse/types';
+import type { DOLocations } from '@chainfuse/types';
 import { sql, type SQL } from 'drizzle-orm';
 import { sqliteTable, unique, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
@@ -13,10 +13,7 @@ function lower<T extends unknown = string>(x: AnySQLiteColumn) {
 export const locations = sqliteTable(
 	'locations',
 	(l) => ({
-		location: l
-			.text({ enum: Object.values(DOLocations) as [DOLocations, ...DOLocations[]] })
-			.primaryKey()
-			.notNull(),
+		location: l.text({ mode: 'text' }).primaryKey().notNull().$type<DOLocations>(),
 	}),
 	(l) => [uniqueIndex('case_insensitive_location').on(lower(l.location))],
 );
@@ -30,8 +27,9 @@ export const instances = sqliteTable(
 		 */
 		doId_utf8: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.doId}))`, { mode: 'virtual' }),
 		location: i
-			.text({ enum: Object.values(DOLocations) as [DOLocations, ...DOLocations[]] })
+			.text({ mode: 'text' })
 			.notNull()
+			.$type<DOLocations>()
 			.references(() => locations.location, { onUpdate: 'cascade', onDelete: 'cascade' }),
 		iata: i.text({ mode: 'text' }).notNull(),
 		colo: i.integer({ mode: 'number' }).notNull(),
