@@ -116,8 +116,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 			drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession('first-unconstrained') as unknown as D1Database) : dbRef, {
 				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 				casing: 'snake_case',
-				// @ts-expect-error We're using coop cache (drizzle needs to fix types)
-				cache: new SQLCache(parseInt(this.env.SQL_TTL, 10), this.ctx),
+				cache: new SQLCache(parseInt(this.env.SQL_TTL, 10)),
 			}),
 		);
 	}
