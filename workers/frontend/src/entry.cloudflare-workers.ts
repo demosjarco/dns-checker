@@ -212,7 +212,8 @@ export default {
 									})();
 
 									let created = false;
-									const attempts = 25;
+									// Let's try 100 times to create a colo
+									const attempts = 100;
 									for (let i = 0; i < attempts; i++) {
 										console.debug(`Attempt ${i}:`, 'Attempting to spawn', coloToCreate, 'in', matchingRegion);
 
