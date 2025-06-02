@@ -53,7 +53,7 @@ export default {
 				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
-					cache: new SQLCache('dns-probe', 'd1', parseInt(env.SQL_TTL, 10), 'all'),
+					cache: new SQLCache('deb65f23-6198-4911-85b8-d48810a080cc', 'd1', parseInt(env.SQL_TTL, 10), 'all'),
 				}),
 			);
 		}
