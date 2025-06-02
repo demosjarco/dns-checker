@@ -21,6 +21,7 @@ interface Trace extends Record<string, string> {
 }
 
 export abstract class LocationTester<E extends Env = EnvVars> extends DurableObject<E> {
+	private d1Session = this.env.PROBE_DB.withSession('first-unconstrained');
 	constructor(ctx: LocationTester<E>['ctx'], env: LocationTester<E>['env']) {
 		super(ctx, env);
 
@@ -113,7 +114,7 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 
 	private drizzleRef(dbRef: D1Database = this.env.PROBE_DB) {
 		return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras.mjs')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
-			drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession('first-unconstrained') as unknown as D1Database) : dbRef, {
+			drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(this.d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 				casing: 'snake_case',
 				cache: new SQLCache('dns-probe', 'd1', parseInt(this.env.SQL_TTL, 10), 'all'),
