@@ -7,4 +7,4 @@ interface Secrets {
 	CF_API_TOKEN: string;
 }
 
-export const PROBE_DB_D1_ID = 'deb65f23-6198-4911-85b8-d48810a080cc' as const;
+export const PROBE_DB_D1_ID = '18a3c458-4d55-419f-9878-535bd322c7a7' as const;
