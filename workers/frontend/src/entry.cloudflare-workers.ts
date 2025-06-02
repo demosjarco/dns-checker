@@ -73,8 +73,34 @@ export default {
 					),
 			),
 		]).then(([doColos, instanceColos]) => {
+			const instanceFullColos = instanceColos.map((instanceColo) => `${instanceColo.iata}${instanceColo.colo}`.toLowerCase());
 			console.debug('doColos', doColos);
 			console.debug('instanceColos', instanceColos);
+
+			// Find colos that exist in instances but not in doColos (should be deleted)
+			const colosToDeleteStrings = instanceFullColos.filter((instanceFullColo) => !doColos.includes(instanceFullColo));
+			const colosToDelete = instanceColos.filter((instanceColo) => {
+				const instanceFullColo = `${instanceColo.iata}${instanceColo.colo}`.toLowerCase();
+				return colosToDeleteStrings.includes(instanceFullColo);
+			});
+
+			if (colosToDelete.length > 0) {
+				console.warn('Deleting colos', colosToDelete);
+
+				ctx.waitUntil(
+					Promise.allSettled(
+						colosToDelete.map(async (coloToDelete) => {
+							const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(coloToDelete.doId), { locationHint: coloToDelete.location });
+
+							await Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm'), stub.nuke()])
+								// Delete from D1
+								.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql`unhex(${coloToDelete.doId})`)));
+						}),
+					),
+				);
+			} else {
+				console.debug('No colos to delete');
+			}
 		});
 	},
 } satisfies ExportedHandler<EnvVars>;
