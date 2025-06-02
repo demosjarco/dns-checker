@@ -83,4 +83,12 @@ export abstract class LocationTester<E extends Env = EnvVars> extends DurableObj
 			),
 		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
 	}
+
+	public async nuke() {
+		await Promise.all([
+			// Alarm isn't deleted as part of `deleteAll()`
+			this.ctx.storage.deleteAlarm(),
+			this.ctx.storage.deleteAll(),
+		]);
+	}
 }
