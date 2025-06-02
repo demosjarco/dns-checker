@@ -19,6 +19,27 @@ interface Airport {
 	iata_code: string;
 }
 
+/**
+ * Missing from ts type
+ */
+interface LoadBalancerRegionResults {
+	iso_standard: string;
+	regions: LoadBalancerRegion[];
+}
+interface LoadBalancerRegion {
+	region_code: string;
+	countries: LoadBalancerCountry[];
+}
+interface LoadBalancerCountry {
+	country_code_a2: string;
+	country_name: string;
+	country_subdivisions?: LoadBalancerCountryRegion[];
+}
+interface LoadBalancerCountryRegion {
+	subdivision_code_a2: string;
+	subdivision_name: string;
+}
+
 export default {
 	/**
 	 * @link https://qwik.dev/docs/deployments/cloudflare-pages/#cloudflare-pages-entry-middleware
