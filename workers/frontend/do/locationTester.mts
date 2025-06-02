@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { EnvVars } from '../src/types';
+import type { EnvVars } from '~/types';
 
 interface Trace extends Record<string, string> {
 	fl: `${number}f${number}`;
