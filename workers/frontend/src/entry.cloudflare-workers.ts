@@ -59,11 +59,18 @@ export default {
 			Promise.all([drizzleRef(), import('../db/schema')]).then(([db, { instances }]) =>
 				db
 					.select({
+						doId: instances.doId,
+						location: instances.location,
 						iata: instances.iata,
 						colo: instances.colo,
 					})
 					.from(instances)
-					.then((rows) => rows.map((row) => `${row.iata}${row.colo}`.toLowerCase())),
+					.then((rows) =>
+						rows.map(({ doId, ...row }) => ({
+							...row,
+							doId: doId.toString('hex'),
+						})),
+					),
 			),
 		]).then(([doColos, instanceColos]) => {
 			console.debug('doColos', doColos);
