@@ -1,0 +1,137 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "a48ee6b3-e090-454f-b126-14990d32e7e3",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "instances": {
+      "name": "instances",
+      "columns": {
+        "do_id": {
+          "name": "do_id",
+          "type": "blob",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "do_id_utf8": {
+          "name": "do_id_utf8",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "generated": {
+            "as": "(lower(hex(\"do_id\")))",
+            "type": "virtual"
+          }
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "iata": {
+          "name": "iata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "colo": {
+          "name": "colo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "iso_country": {
+          "name": "iso_country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "iso_region": {
+          "name": "iso_region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "instances_iata_colo_unique": {
+          "name": "instances_iata_colo_unique",
+          "columns": [
+            "iata",
+            "colo"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "instances_location_locations_location_fk": {
+          "name": "instances_location_locations_location_fk",
+          "tableFrom": "instances",
+          "tableTo": "locations",
+          "columnsFrom": [
+            "location"
+          ],
+          "columnsTo": [
+            "location"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "locations": {
+      "name": "locations",
+      "columns": {
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "case_insensitive_location": {
+          "name": "case_insensitive_location",
+          "columns": [
+            "lower(\"location\")"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "case_insensitive_location": {
+        "columns": {
+          "lower(\"location\")": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}
