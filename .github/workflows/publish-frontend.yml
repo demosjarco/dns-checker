@@ -99,5 +99,7 @@ jobs:
           workingDirectory: workers/frontend
           vars: |
             GIT_HASH
+            CF_ACCOUNT_ID
         env:
           GIT_HASH: ${{ github.sha }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
