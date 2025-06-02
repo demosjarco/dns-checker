@@ -154,7 +154,7 @@ export default {
 					import('iata-location/data').then(({ default: allAirports }) => console.debug('allAirports', allAirports)),
 				]).then(() =>
 					Promise.allSettled(
-						colosToCreate.map(async (coloToCreate) => {
+						colosToCreate.map((coloToCreate) => {
 							const iataCode = coloToCreate.slice(0, 3).toUpperCase();
 							console.debug('Searching IATA', iataCode);
 
