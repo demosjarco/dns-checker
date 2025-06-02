@@ -9,6 +9,7 @@
 		"noUncheckedSideEffectImports": false,
 		"paths": {
 			"~/*": ["./src/*"],
+			"~db/*": ["./db/*"],
 			"~do/*": ["./do/*"]
 		},
 		"types": ["./worker-configuration.d.ts", "node", "turnstile-types", "zaraz-ts"],
