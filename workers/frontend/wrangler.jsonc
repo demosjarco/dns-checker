@@ -19,7 +19,8 @@
 	},
 	"vars": {
 		"ENVIRONMENT": "production",
-		"NODE_ENV": "production"
+		"NODE_ENV": "production",
+		"SQL_TTL": "300"
 	},
 	"assets": {
 		"binding": "ASSET",
