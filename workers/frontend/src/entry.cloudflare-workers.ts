@@ -208,8 +208,8 @@ export default {
 									})();
 
 									let created = false;
-									// 1000 (leave 100 aside for other operations)
-									const attempts = Math.round(900 / colosToCreate.length);
+									// 1000 request max in workers (leave 100 aside for other operations) / 2 (half because each try has to make a network request)
+									const attempts = Math.round((1000 - 100) / 2 / colosToCreate.length);
 									for (let i = 0; i < attempts; i++) {
 										console.debug(`Attempt ${i}:`, 'Attempting to spawn', coloToCreate, 'in', matchingRegion);
 
