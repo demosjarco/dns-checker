@@ -1,6 +1,8 @@
 import { DOLocations } from '@chainfuse/types';
 import type { Buffer } from 'node:buffer';
 import { PROBE_DB_D1_ID, type EnvVars } from '~/types.js';
+
+// @ts-ignore this gets generated automatically later in the build process
 import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
 
 export { LocationTester } from '~do/locationTester.mjs';
@@ -43,6 +45,7 @@ export default {
 	/**
 	 * @link https://qwik.dev/docs/deployments/cloudflare-pages/#cloudflare-pages-entry-middleware
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	fetch: assetFetch,
 	async scheduled(event, env, ctx) {
 		const dbRef = env.PROBE_DB;
