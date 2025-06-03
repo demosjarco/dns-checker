@@ -49,11 +49,11 @@ export default {
 		const d1Session = env.PROBE_DB.withSession('first-unconstrained');
 
 		function drizzleRef() {
-			return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras.mjs')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
+			return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
 				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
-					cache: new SQLCache(PROBE_DB_D1_ID, 'd1', parseInt(env.SQL_TTL, 10), 'all'),
+					cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(env.SQL_TTL, 10), strategy: 'all' }),
 				}),
 			);
 		}

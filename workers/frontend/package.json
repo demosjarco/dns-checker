@@ -48,7 +48,8 @@
 		"@chainfuse/types": "^2.10.18",
 		"drizzle-orm": "^0.44.1",
 		"iata-location": "^1.0.1",
-		"leaflet": "^1.9.4"
+		"leaflet": "^1.9.4",
+		"zod": "^3.25.49"
 	},
 	"devDependencies": {
 		"@builder.io/qwik": "^1.14.1",
