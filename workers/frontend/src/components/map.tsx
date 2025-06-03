@@ -1,15 +1,10 @@
 import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$ } from '@builder.io/qwik';
 import { LngLatBounds, Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
+import type { InstanceData } from '~/types';
 
 // @ts-expect-error types don't cover css
 import maplibreStyles from 'maplibre-gl/dist/maplibre-gl.css?inline';
-
-interface InstanceData {
-	doId: string;
-	iata: string;
-	location: string;
-}
 
 export const getBoundaryBox = (map: MapLibreMap) => {
 	const bounds = map.getBounds();
@@ -34,8 +29,8 @@ export default component$(() => {
 		);
 	}
 
-	// Prepare data for map rendering
-	const instancesData = instances.value as InstanceData[];
+	// Prepare data for map rendering with proper type checking
+	const instancesData = Array.isArray(instances.value) ? instances.value : [];
 	const iataData = iataLocations.value;
 
 	// eslint-disable-next-line @typescript-eslint/unbound-method, qwik/no-use-visible-task
@@ -75,21 +70,21 @@ export default component$(() => {
 			);
 
 			// Group instances by unique IATA codes to avoid duplicate markers
-			const uniqueIatas = new Map<string, InstanceData[]>();
+			const uniqueIatas: Record<string, InstanceData[]> = {};
 
 			for (const instance of instancesData) {
 				const iataCode = instance.iata.toUpperCase();
-				if (!uniqueIatas.has(iataCode)) {
-					uniqueIatas.set(iataCode, []);
+				if (!uniqueIatas[iataCode]) {
+					uniqueIatas[iataCode] = [];
 				}
-				uniqueIatas.get(iataCode)!.push(instance);
+				uniqueIatas[iataCode].push(instance);
 			}
 
 			// Create markers and collect bounds
 			const bounds = new LngLatBounds();
 			let hasValidMarkers = false;
 
-			for (const [iataCode, instanceGroup] of uniqueIatas) {
+			for (const [iataCode, instanceGroup] of Object.entries(uniqueIatas)) {
 				const airportInfo = iataData[iataCode];
 
 				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -114,7 +109,7 @@ export default component$(() => {
 								<div class="text-sm mb-1"><strong>Location:</strong> ${airportInfo.municipality}, ${airportInfo.iso_country}</div>
 								<div class="text-sm mb-2"><strong>Instances:</strong> ${instanceGroup.length}</div>
 								<div class="text-xs">
-									${instanceGroup.map((instance: InstanceData) => `<div>• ${instance.location}</div>`).join('')}
+									${instanceGroup.map((instance) => `<div>• ${instance.location}</div>`).join('')}
 								</div>
 							</div>
 						`;

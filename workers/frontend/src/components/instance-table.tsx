@@ -1,11 +1,6 @@
 import { component$ } from '@builder.io/qwik';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
-
-interface InstanceData {
-	doId: string;
-	iata: string;
-	location: string;
-}
+import type { InstanceData } from '~/types';
 
 interface LocationGroup {
 	location: string;
@@ -57,7 +52,8 @@ export default component$(() => {
 		const locationMap = new Map<string, Map<string, IataGroup>>();
 
 		// First, group by location, then by IATA within each location
-		for (const instance of instances.value as InstanceData[]) {
+		const instancesData = Array.isArray(instances.value) ? instances.value : [];
+		for (const instance of instancesData) {
 			const location = instance.location;
 			const iataCode = instance.iata.toUpperCase();
 			const airportInfo = iataLocations.value[iataCode];
