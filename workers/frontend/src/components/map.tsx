@@ -1,15 +1,10 @@
 import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$ } from '@builder.io/qwik';
 import { LngLatBounds, Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
+import type { InstanceData } from '~/types';
 
 // @ts-expect-error types don't cover css
 import maplibreStyles from 'maplibre-gl/dist/maplibre-gl.css?inline';
-
-interface InstanceData {
-	doId: string;
-	iata: string;
-	location: string;
-}
 
 export const getBoundaryBox = (map: MapLibreMap) => {
 	const bounds = map.getBounds();
