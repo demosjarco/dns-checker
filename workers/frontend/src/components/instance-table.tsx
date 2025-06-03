@@ -1,4 +1,6 @@
-import { component$ } from '@builder.io/qwik';
+import { component$, type Signal } from '@builder.io/qwik';
+import type { FailReturn } from '@builder.io/qwik-city';
+import type { DOLocations } from '@chainfuse/types';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
 import type { InstanceData } from '~/types';
 
@@ -16,7 +18,18 @@ interface IataGroup {
 }
 
 export default component$(() => {
-	const instances = useLocationTesterInstances();
+	const instances = useLocationTesterInstances() as Readonly<
+		Signal<
+			| {
+					iata: string;
+					doId: string;
+					location: DOLocations;
+			  }[]
+			| FailReturn<{
+					error: string;
+			  }>
+		>
+	>;
 	const iataLocations = useIataLocations();
 
 	// Handle error state for instances
