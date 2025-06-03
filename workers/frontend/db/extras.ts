@@ -4,6 +4,7 @@ import type { CacheConfig } from 'drizzle-orm/cache/core/types';
 import { is } from 'drizzle-orm/entity';
 import type { LogWriter } from 'drizzle-orm/logger';
 import { getTableName, Table } from 'drizzle-orm/table';
+import { z } from 'zod/v4';
 
 export class DebugLogWriter implements LogWriter {
 	write(message: string) {
@@ -12,33 +13,56 @@ export class DebugLogWriter implements LogWriter {
 }
 
 export class SQLCache extends DrizzleCache {
-	private dbName: string;
-	private dbType: string;
+	private dbName: z.output<ReturnType<(typeof SQLCache)['constructorArgs']>>['dbName'];
+	private dbType: z.output<ReturnType<(typeof SQLCache)['constructorArgs']>>['dbType'];
 	private cache: Promise<Cache>;
-	private globalTtl: number;
-	private _strategy: ReturnType<DrizzleCache['strategy']>;
+	private globalTtl: z.output<ReturnType<(typeof SQLCache)['constructorArgs']>>['cacheTTL'];
+	private _strategy: z.output<ReturnType<(typeof SQLCache)['constructorArgs']>>['strategy'];
 	// This object will be used to store which query keys were used
 	// for a specific table, so we can later use it for invalidation.
 	private usedTablesPerKey: Record<string, string[]> = {};
 
+	private static constructorArgs() {
+		return z.object({
+			dbName: z
+				.string()
+				.nonempty()
+				.transform((val) => encodeURIComponent(val)),
+			dbType: z
+				.string()
+				.nonempty()
+				.transform((val) => encodeURIComponent(val)),
+			cacheTTL: z
+				.int()
+				.nonnegative()
+				.default(5 * 60),
+			strategy: z.enum(['explicit', 'all']).default('explicit'),
+		});
+	}
+
 	/**
 	 * Creates an instance of the class with the specified database name, type, and cache TTL.
 	 *
-	 * @param dbName - The name of the database to use. Will be url encoded if not already url safe.
+	 * @param dbName - The name of the database to use. Must be globally unique as it is used for cache lookup. Will be url encoded if not already url safe.
 	 * @param dbType - The type of the database (e.g., `d1`, `pg` `mysql`). Will be url encoded if not already url safe.
 	 * @param cacheTTL - The time-to-live (TTL) value for the cache, in seconds.
 	 * @param strategy - The caching strategy to use. Defaults to 'explicit'.
 	 * - `explicit`: The cache is used only when .$withCache() is added to a query.
 	 * - `all`: All queries are cached globally.
+	 * @param cacheStore - The cache store to use. Can be a CacheStorage (like the global `caches`) or a custom object with `default` property of type Cache and `open()` function.
 	 */
-	constructor(dbName: string, dbType: string, cacheTTL: number, strategy: ReturnType<DrizzleCache['strategy']> = 'explicit') {
+	constructor(args: z.input<ReturnType<(typeof SQLCache)['constructorArgs']>>, cacheStore: CacheStorage = caches) {
 		super();
+		const { dbName, dbType, cacheTTL, strategy } = SQLCache.constructorArgs().parse(args);
 
-		const tempUrlSafe = new URLSearchParams({ dbName, dbType });
-		this.dbName = tempUrlSafe.get('dbName')!;
-		this.dbType = tempUrlSafe.get('dbType')!;
+		this.dbName = dbName;
+		this.dbType = dbType;
 
-		this.cache = caches.open(`${dbType}:${dbName}`);
+		if ('open' in cacheStore && typeof cacheStore.open === 'function') {
+			this.cache = cacheStore.open(`${dbType}:${dbName}`);
+		} else {
+			throw new Error('Cache store must be a CacheStorage (or subclass/instance of)');
+		}
 		this.globalTtl = cacheTTL;
 		this._strategy = strategy;
 	}
@@ -68,7 +92,7 @@ export class SQLCache extends DrizzleCache {
 	 * This function accepts query and parameters that cached into key param, allowing you to retrieve response values for this query from the cache.
 	 * @param key - A hashed query and parameters.
 	 */
-	override async get(key: string, tables: string[], isTag: boolean, isAutoInvalidate?: boolean): Promise<any[] | undefined> {
+	override async get(key: string, tables: string[], isTag: boolean): Promise<any[] | undefined> {
 		const response = await this.cache.then(async (cache) => cache.match(this.getCacheKey(isTag ? { tag: key } : { key })));
 
 		console.debug('SQLCache.get', isTag ? 'tag' : 'key', key, response?.ok ? 'HIT' : 'MISS');
