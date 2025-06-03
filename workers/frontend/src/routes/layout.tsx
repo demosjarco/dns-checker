@@ -31,7 +31,7 @@ export const useDrizzleRef = routeLoader$(({ platform, resolveValue }) =>
 export const useLocationTesterInstances = routeLoader$(({ resolveValue, fail }) =>
 	Promise.all([resolveValue(useDrizzleRef), import('~db/schema')]).then(async ([db, { instances }]) => {
 		if (db) {
-			return db
+			return await db
 				.select({
 					doId: instances.doId,
 					iata: instances.iata,
