@@ -9,7 +9,7 @@ export { LocationTester } from '~do/locationTester.mjs';
  * Temporary
  * @link https://github.com/elsbrock/iata-location/issues/3
  */
-interface Airport {
+export interface Airport {
 	latitude_deg: string;
 	longitude_deg: string;
 	iso_country: string;
