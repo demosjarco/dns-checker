@@ -1,4 +1,6 @@
-import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$ } from '@builder.io/qwik';
+import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type Signal } from '@builder.io/qwik';
+import type { FailReturn } from '@builder.io/qwik-city';
+import type { DOLocations } from '@chainfuse/types';
 import { LngLatBounds, Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
 import type { InstanceData } from '~/types';
@@ -14,7 +16,18 @@ export const getBoundaryBox = (map: MapLibreMap) => {
 export default component$(() => {
 	const mapDiv = useSignal<HTMLDivElement>();
 	const mapRef = useSignal<MapLibreMap>();
-	const instances = useLocationTesterInstances();
+	const instances = useLocationTesterInstances() as Readonly<
+		Signal<
+			| {
+					iata: string;
+					doId: string;
+					location: DOLocations;
+			  }[]
+			| FailReturn<{
+					error: string;
+			  }>
+		>
+	>;
 	const iataLocations = useIataLocations();
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -30,7 +43,7 @@ export default component$(() => {
 	}
 
 	// Prepare data for map rendering
-	const instancesData = instances.value as InstanceData[];
+	const instancesData = instances.value;
 	const iataData = iataLocations.value;
 
 	// eslint-disable-next-line @typescript-eslint/unbound-method, qwik/no-use-visible-task
