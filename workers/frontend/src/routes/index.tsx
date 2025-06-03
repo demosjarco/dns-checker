@@ -1,5 +1,6 @@
 import { component$ } from '@builder.io/qwik';
 import type { DocumentHead } from '@builder.io/qwik-city';
+import InstanceTable from '~/components/instance-table';
 import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
 import { useGitHash, useWorkerMetadata } from '~/routes/layout';
@@ -24,7 +25,9 @@ export default component$(() => {
 				<RecordSearch />
 			</header>
 			<main class="flex flex-1">
-				<section>Hello world</section>
+				<section>
+					<InstanceTable />
+				</section>
 				<aside class="grow">
 					<Map />
 				</aside>
