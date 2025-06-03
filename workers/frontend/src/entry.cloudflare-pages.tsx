@@ -23,7 +23,9 @@ declare global {
 	interface QwikCityPlatformLocal extends Omit<PlatformProxy<EnvVars>, 'request'> {
 		request?: never;
 	}
-	type QwikCityPlatform = QwikCityPlatformLive | QwikCityPlatformLocal;
+	type QwikCityPlatform = (QwikCityPlatformLive | QwikCityPlatformLocal) & {
+		caches: CacheStorage;
+	};
 }
 
 const fetch = createQwikCity({ render, qwikCityPlan });
