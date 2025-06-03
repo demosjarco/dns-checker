@@ -1,11 +1,6 @@
 import { component$ } from '@builder.io/qwik';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
-
-interface InstanceData {
-	doId: string;
-	iata: string;
-	location: string;
-}
+import type { InstanceData } from '~/types';
 
 interface LocationGroup {
 	location: string;
