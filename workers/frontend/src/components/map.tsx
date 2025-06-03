@@ -1,9 +1,9 @@
 import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$ } from '@builder.io/qwik';
-import { icon, latLngBounds, Map as LeafletMap, marker, tileLayer } from 'leaflet';
+import { LngLatBounds, Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
 
 // @ts-expect-error types don't cover css
-import leafletStyles from 'leaflet/dist/leaflet.css?inline';
+import maplibreStyles from 'maplibre-gl/dist/maplibre-gl.css?inline';
 
 interface InstanceData {
 	doId: string;
@@ -11,20 +11,19 @@ interface InstanceData {
 	location: string;
 }
 
-export const getBoundaryBox = (map: LeafletMap) => {
-	const northEast = map.getBounds().getNorthEast();
-	const southWest = map.getBounds().getSouthWest();
-	return `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
+export const getBoundaryBox = (map: MapLibreMap) => {
+	const bounds = map.getBounds();
+	return `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
 };
 
 export default component$(() => {
 	const mapDiv = useSignal<HTMLDivElement>();
-	const mapRef = useSignal<LeafletMap>();
+	const mapRef = useSignal<MapLibreMap>();
 	const instances = useLocationTesterInstances();
 	const iataLocations = useIataLocations();
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-	useStyles$(leafletStyles);
+	useStyles$(maplibreStyles);
 
 	// Handle error state for instances
 	if ('error' in instances.value) {
@@ -48,25 +47,32 @@ export default component$(() => {
 		if (mapDiv.value && instancesData.length > 0) {
 			// Create map
 			mapRef.value = noSerialize(
-				new LeafletMap(mapDiv.value, {
-					center: [37.780231, -122.390472], // Default center, will be adjusted
+				new MapLibreMap({
+					container: mapDiv.value,
+					style: {
+						version: 8,
+						sources: {
+							openstreetmap: {
+								type: 'raster',
+								tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+								tileSize: 256,
+								attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+							},
+						},
+						layers: [
+							{
+								id: 'openstreetmap',
+								type: 'raster',
+								source: 'openstreetmap',
+								minzoom: 0,
+								maxzoom: 19,
+							},
+						],
+					},
+					center: [-122.390472, 37.780231], // Default center, will be adjusted
 					zoom: 2, // Default zoom, will be adjusted
 				}),
 			);
-
-			// Add tile layer
-			tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				maxZoom: 19,
-				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-			}).addTo(mapRef.value!);
-
-			// Create custom marker icon
-			const customIcon = icon({
-				iconUrl: '/images/cf-pin.svg',
-				iconSize: [32, 14], // Adjusted for the Cloudflare logo aspect ratio
-				iconAnchor: [16, 14], // Center bottom of the icon
-				popupAnchor: [0, -14],
-			});
 
 			// Group instances by unique IATA codes to avoid duplicate markers
 			const uniqueIatas = new Map<string, InstanceData[]>();
@@ -80,7 +86,7 @@ export default component$(() => {
 			}
 
 			// Create markers and collect bounds
-			const bounds = latLngBounds([]);
+			const bounds = new LngLatBounds();
 			let hasValidMarkers = false;
 
 			for (const [iataCode, instanceGroup] of uniqueIatas) {
@@ -92,8 +98,14 @@ export default component$(() => {
 					const lng = parseFloat(airportInfo.longitude_deg);
 
 					if (!isNaN(lat) && !isNaN(lng)) {
-						// Create marker
-						const mapMarker = marker([lat, lng], { icon: customIcon });
+						// Create custom marker element
+						const markerElement = document.createElement('div');
+						markerElement.style.backgroundImage = 'url(/images/cf-pin.svg)';
+						markerElement.style.width = '32px';
+						markerElement.style.height = '14px';
+						markerElement.style.backgroundSize = 'contain';
+						markerElement.style.backgroundRepeat = 'no-repeat';
+						markerElement.style.cursor = 'pointer';
 
 						// Create popup content
 						const popupContent = `
@@ -107,11 +119,14 @@ export default component$(() => {
 							</div>
 						`;
 
-						mapMarker.bindPopup(popupContent);
-						mapMarker.addTo(mapRef.value!);
+						// Create popup
+						const popup = new Popup({ offset: [0, -14] }).setHTML(popupContent);
+
+						// Create marker
+						new Marker({ element: markerElement }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.value!);
 
 						// Extend bounds
-						bounds.extend([lat, lng]);
+						bounds.extend([lng, lat]);
 						hasValidMarkers = true;
 					}
 				}
@@ -120,7 +135,7 @@ export default component$(() => {
 			// Fit map to show all markers with some padding
 			if (hasValidMarkers) {
 				mapRef.value!.fitBounds(bounds, {
-					padding: [20, 20],
+					padding: { top: 20, bottom: 20, left: 20, right: 20 },
 					maxZoom: 10, // Don't zoom in too much even if there's only one marker
 				});
 			}
