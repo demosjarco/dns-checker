@@ -256,6 +256,7 @@ class CSPGenerator {
 		this.addFrame({ self: true });
 		this.addImage({ self: true, data: true });
 		this.addScript({ self: true, nonce: true });
+		this.addWorker({ self: true, blob: true });
 		this.addStyle({ self: true, unsafeInline: true });
 		this.addUpgradeInsecureRequests();
 	}
