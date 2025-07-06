@@ -1,12 +1,12 @@
 import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type Signal } from '@builder.io/qwik';
 import type { FailReturn } from '@builder.io/qwik-city';
 import type { DOLocations } from '@chainfuse/types';
-import { LngLatBounds, Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
+import { Map as MapLibreMap } from 'maplibre-gl';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
-import type { InstanceData } from '~/types';
 
 // @ts-expect-error types don't cover css
 import maplibreStyles from 'maplibre-gl/dist/maplibre-gl.css?inline';
+import type { InstanceData } from '~/types';
 
 export const getBoundaryBox = (map: MapLibreMap) => {
 	const bounds = map.getBounds();
@@ -52,6 +52,9 @@ export default component$(() => {
 
 		cleanup(() => mapRef.value?.remove());
 
+		console.debug('instances', instances.value);
+		console.debug('iataLocations', iataLocations.value);
+
 		if (mapDiv.value && instancesData.length > 0) {
 			// Create map
 			mapRef.value = noSerialize(
@@ -82,71 +85,71 @@ export default component$(() => {
 				}),
 			);
 
-			// Group instances by unique IATA codes to avoid duplicate markers
+			// // Group instances by unique IATA codes to avoid duplicate markers
 			const uniqueIatas = new Map<string, InstanceData[]>();
 
-			for (const instance of instancesData) {
-				const iataCode = instance.iata.toUpperCase();
-				if (!uniqueIatas.has(iataCode)) {
-					uniqueIatas.set(iataCode, []);
-				}
-				uniqueIatas.get(iataCode)!.push(instance);
-			}
+			// for (const instance of instancesData) {
+			// 	const iataCode = instance.iata.toUpperCase();
+			// 	if (!uniqueIatas.has(iataCode)) {
+			// 		uniqueIatas.set(iataCode, []);
+			// 	}
+			// 	uniqueIatas.get(iataCode)!.push(instance);
+			// }
 
-			// Create markers and collect bounds
-			const bounds = new LngLatBounds();
-			let hasValidMarkers = false;
+			// // Create markers and collect bounds
+			// const bounds = new LngLatBounds();
+			// let hasValidMarkers = false;
 
-			for (const [iataCode, instanceGroup] of uniqueIatas) {
-				const airportInfo = iataData[iataCode];
+			// for (const [iataCode, instanceGroup] of uniqueIatas) {
+			// 	const airportInfo = iataData[iataCode];
 
-				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-				if (airportInfo?.latitude_deg && airportInfo?.longitude_deg) {
-					const lat = parseFloat(airportInfo.latitude_deg);
-					const lng = parseFloat(airportInfo.longitude_deg);
+			// 	// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			// 	if (airportInfo?.latitude_deg && airportInfo?.longitude_deg) {
+			// 		const lat = parseFloat(airportInfo.latitude_deg);
+			// 		const lng = parseFloat(airportInfo.longitude_deg);
 
-					if (!isNaN(lat) && !isNaN(lng)) {
-						// Create custom marker element
-						const markerElement = document.createElement('div');
-						markerElement.style.backgroundImage = 'url(/images/cf-pin.svg)';
-						markerElement.style.width = '32px';
-						markerElement.style.height = '14px';
-						markerElement.style.backgroundSize = 'contain';
-						markerElement.style.backgroundRepeat = 'no-repeat';
-						markerElement.style.cursor = 'pointer';
+			// 		if (!isNaN(lat) && !isNaN(lng)) {
+			// 			// Create custom marker element
+			// 			const markerElement = document.createElement('div');
+			// 			markerElement.style.backgroundImage = 'url(/images/cf-pin.svg)';
+			// 			markerElement.style.width = '32px';
+			// 			markerElement.style.height = '14px';
+			// 			markerElement.style.backgroundSize = 'contain';
+			// 			markerElement.style.backgroundRepeat = 'no-repeat';
+			// 			markerElement.style.cursor = 'pointer';
 
-						// Create popup content
-						const popupContent = `
-							<div class="font-sans">
-								<div class="font-bold text-lg mb-2">${iataCode}</div>
-								<div class="text-sm mb-1"><strong>Location:</strong> ${airportInfo.municipality}, ${airportInfo.iso_country}</div>
-								<div class="text-sm mb-2"><strong>Instances:</strong> ${instanceGroup.length}</div>
-								<div class="text-xs">
-									${instanceGroup.map((instance: InstanceData) => `<div>• ${instance.location}</div>`).join('')}
-								</div>
-							</div>
-						`;
+			// 			// Create popup content
+			// 			const popupContent = `
+			// 				<div class="font-sans">
+			// 					<div class="font-bold text-lg mb-2">${iataCode}</div>
+			// 					<div class="text-sm mb-1"><strong>Location:</strong> ${airportInfo.municipality}, ${airportInfo.iso_country}</div>
+			// 					<div class="text-sm mb-2"><strong>Instances:</strong> ${instanceGroup.length}</div>
+			// 					<div class="text-xs">
+			// 						${instanceGroup.map((instance: InstanceData) => `<div>• ${instance.location}</div>`).join('')}
+			// 					</div>
+			// 				</div>
+			// 			`;
 
-						// Create popup
-						const popup = new Popup({ offset: [0, -14] }).setHTML(popupContent);
+			// 			// Create popup
+			// 			const popup = new Popup({ offset: [0, -14] }).setHTML(popupContent);
 
-						// Create marker
-						new Marker({ element: markerElement }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.value!);
+			// 			// Create marker
+			// 			new Marker({ element: markerElement }).setLngLat([lng, lat]).setPopup(popup).addTo(mapRef.value!);
 
-						// Extend bounds
-						bounds.extend([lng, lat]);
-						hasValidMarkers = true;
-					}
-				}
-			}
+			// 			// Extend bounds
+			// 			bounds.extend([lng, lat]);
+			// 			hasValidMarkers = true;
+			// 		}
+			// 	}
+			// }
 
-			// Fit map to show all markers with some padding
-			if (hasValidMarkers) {
-				mapRef.value!.fitBounds(bounds, {
-					padding: { top: 20, bottom: 20, left: 20, right: 20 },
-					maxZoom: 10, // Don't zoom in too much even if there's only one marker
-				});
-			}
+			// // Fit map to show all markers with some padding
+			// if (hasValidMarkers) {
+			// 	mapRef.value!.fitBounds(bounds, {
+			// 		padding: { top: 20, bottom: 20, left: 20, right: 20 },
+			// 		maxZoom: 10, // Don't zoom in too much even if there's only one marker
+			// 	});
+			// }
 		}
 	});
 
