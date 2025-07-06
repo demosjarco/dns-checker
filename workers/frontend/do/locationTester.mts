@@ -20,7 +20,7 @@ interface Trace extends Record<string, string> {
 	kex: string;
 }
 
-export abstract class LocationTester<E extends Env = EnvVars> extends DurableObject<E> {
+export abstract class LocationTester<E extends EnvVars = EnvVars> extends DurableObject<E> {
 	private d1Session = this.env.PROBE_DB.withSession('first-unconstrained');
 	constructor(ctx: LocationTester<E>['ctx'], env: LocationTester<E>['env']) {
 		super(ctx, env);
