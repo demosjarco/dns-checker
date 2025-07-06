@@ -1,12 +1,23 @@
 import type { DOLocations } from '@chainfuse/types';
 
-export interface EnvVars extends Secrets, Env {
+export interface EnvVars extends Secrets, manualCf {
 	GIT_HASH?: string;
 	CF_ACCOUNT_ID: string;
 }
 
 interface Secrets {
 	CF_API_TOKEN: string;
+}
+
+interface manualCf {
+	ENVIRONMENT: 'production';
+	NODE_ENV: 'production';
+	SQL_TTL: `${number}`;
+	CF_ACCOUNT_ID: string;
+	LOCATION_TESTER: DurableObjectNamespace<import('./entry.cloudflare-workers').LocationTester>;
+	PROBE_DB: D1Database;
+	CF_VERSION_METADATA: WorkerVersionMetadata;
+	ASSET: Fetcher;
 }
 
 export interface InstanceData {
