@@ -12,7 +12,8 @@
 			"~db/*": ["./db/*"],
 			"~do/*": ["./do/*"]
 		},
-		"types": ["./worker-configuration.d.ts", "node", "turnstile-types", "zaraz-ts"],
+		// "types": ["./worker-configuration.d.ts", "node", "turnstile-types", "zaraz-ts"],
+		"types": ["@cloudflare/workers-types/experimental", "turnstile-types", "zaraz-ts"],
 		"sourceMap": true,
 		"outDir": "tmp"
 	},
