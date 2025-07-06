@@ -50,7 +50,7 @@
 		"drizzle-orm": "^0.44.1",
 		"iata-location": "^1.0.1",
 		"maplibre-gl": "^5.5.0",
-		"zod": "^3.25.49"
+		"zod": "^3.25.74"
 	},
 	"devDependencies": {
 		"@builder.io/qwik": "^1.14.1",
