@@ -3,7 +3,7 @@
 	"name": "dns-probe",
 	// "main": "./dist/_worker.js",
 	"main": "src/entry.cloudflare-workers.ts",
-	"compatibility_date": "2025-05-25",
+	"compatibility_date": "2025-06-17",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	"workers_dev": false,
 	"preview_urls": false,
