@@ -1,21 +1,22 @@
 import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type Signal } from '@builder.io/qwik';
 import type { FailReturn } from '@builder.io/qwik-city';
 import type { DOLocations } from '@chainfuse/types';
-import { Map as MapLibreMap } from 'maplibre-gl';
+import { Map as LeafletMap, tileLayer } from 'leaflet';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
-
-// @ts-expect-error types don't cover css
-import maplibreStyles from 'maplibre-gl/dist/maplibre-gl.css?inline';
 import type { InstanceData } from '~/types';
 
-export const getBoundaryBox = (map: MapLibreMap) => {
-	const bounds = map.getBounds();
-	return `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+// @ts-expect-error types don't cover css
+import leafletStyles from 'leaflet/dist/leaflet.css?inline';
+
+export const getBoundaryBox = (map: LeafletMap) => {
+	const northEast = map.getBounds().getNorthEast();
+	const southWest = map.getBounds().getSouthWest();
+	return `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
 };
 
 export default component$(() => {
 	const mapDiv = useSignal<HTMLDivElement>();
-	const mapRef = useSignal<MapLibreMap>();
+	const mapRef = useSignal<LeafletMap>();
 	const instances = useLocationTesterInstances() as Readonly<
 		Signal<
 			| {
@@ -31,7 +32,7 @@ export default component$(() => {
 	const iataLocations = useIataLocations();
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-	useStyles$(maplibreStyles);
+	useStyles$(leafletStyles);
 
 	// Handle error state for instances
 	if ('error' in instances.value) {
@@ -43,8 +44,8 @@ export default component$(() => {
 	}
 
 	// Prepare data for map rendering
-	const instancesData = instances.value;
-	const iataData = iataLocations.value;
+	// const instancesData = instances.value;
+	// const iataData = iataLocations.value;
 
 	// eslint-disable-next-line @typescript-eslint/unbound-method, qwik/no-use-visible-task
 	useVisibleTask$(({ track, cleanup }) => {
@@ -55,35 +56,19 @@ export default component$(() => {
 		console.debug('instances', instances.value);
 		console.debug('iataLocations', iataLocations.value);
 
-		if (mapDiv.value && instancesData.length > 0) {
+		if (mapDiv.value && !('error' in instances.value) && instances.value.length > 0) {
 			// Create map
 			mapRef.value = noSerialize(
-				new MapLibreMap({
-					container: mapDiv.value,
-					style: {
-						version: 8,
-						sources: {
-							openstreetmap: {
-								type: 'raster',
-								tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-								tileSize: 256,
-								attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-							},
-						},
-						layers: [
-							{
-								id: 'openstreetmap',
-								type: 'raster',
-								source: 'openstreetmap',
-								minzoom: 0,
-								maxzoom: 19,
-							},
-						],
-					},
-					center: [-122.390472, 37.780231], // Default center, will be adjusted
+				new LeafletMap(mapDiv.value, {
+					center: [0, 0], // Default center, will be adjusted
 					zoom: 2, // Default zoom, will be adjusted
 				}),
 			);
+
+			tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				maxZoom: 19,
+				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+			}).addTo(mapRef.value!);
 
 			// // Group instances by unique IATA codes to avoid duplicate markers
 			const uniqueIatas = new Map<string, InstanceData[]>();
