@@ -45,7 +45,7 @@
 			"database_name": "dns-probe",
 			"database_id": "18a3c458-4d55-419f-9878-535bd322c7a7",
 			"migrations_dir": "db/migrations",
-			"remote": true
+			"experimental_remote": true
 		}
 	],
 	"migrations": [
