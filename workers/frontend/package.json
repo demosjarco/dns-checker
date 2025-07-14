@@ -45,7 +45,7 @@
 	},
 	"engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime",
 	"dependencies": {
-		"@chainfuse/helpers": "^3.4.3",
+		"@chainfuse/helpers": "^3.4.4",
 		"@chainfuse/types": "^2.10.24",
 		"drizzle-orm": "^0.44.2",
 		"iata-location": "^1.0.1",
