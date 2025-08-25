@@ -148,7 +148,7 @@ export default {
 
 				await Promise.all([
 					import('@chainfuse/helpers')
-						.then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { level: 1, color: false }))
+						.then(({ NetHelpers }) => NetHelpers.cfApi(env.CF_API_TOKEN, { logging: { level: 1, color: false } }))
 						.then((cfApi) => cfApi.loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID }))
 						.then((result) => result as LoadBalancerRegionResults),
 					import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>),
