@@ -137,12 +137,7 @@ export class SQLCache extends DrizzleCache {
 		await this.cache.then(async (cache) => cache.put(this.getCacheKey(isTag ? { tag: hashedQuery } : { key: hashedQuery }), cacheRequest)).then(() => console.debug('SQLCache.put', isTag ? 'tag' : 'key', hashedQuery, 'SUCCESS'));
 
 		for (const table of tables) {
-			const keys = this.usedTablesPerKey[table];
-			if (keys === undefined) {
-				this.usedTablesPerKey[table] = [hashedQuery];
-			} else {
-				keys.push(hashedQuery);
-			}
+			(this.usedTablesPerKey[table] ??= []).push(hashedQuery);
 		}
 	}
 
