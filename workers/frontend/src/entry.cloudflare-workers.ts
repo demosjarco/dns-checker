@@ -8,6 +8,34 @@ import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
 export { LocationTester } from '~do/locationTester.mjs';
 
 /**
+ * @todo comment nicer
+ */
+interface DoData {
+	hourly: number;
+	coverage: number;
+	colos: Record<
+		// IATA code
+		string,
+		DoColo
+	>;
+}
+interface DoColo {
+	hosts: Record<
+		// IATA code
+		string,
+		DoHost
+	>;
+	nearestRegion: LoadBalancerRegion['region_code'];
+}
+interface DoHost {
+	likelihood: number;
+	/**
+	 * Estimated latency in ms
+	 */
+	latency: number;
+}
+
+/**
  * Temporary
  * @link https://github.com/elsbrock/iata-location/issues/3
  */
@@ -69,28 +97,20 @@ export default {
 				.onConflictDoNothing(),
 		);
 
-		// Calculate TTL until 15 minutes before next GMT midnight
-		const now = new Date(event.scheduledTime);
-		const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
-		const fifteenMinutesBeforeGMTMidnight = new Date(nextGMTMidnight.getTime() - 15 * 60 * 1000);
-
 		await Promise.all([
 			import('@chainfuse/helpers')
-				.then(({ NetHelpers }) =>
-					NetHelpers.loggingFetch(new URL('colo-route/colos', 'https://colo-route.jross.dev'), {
-						logging: { level: 1, color: false },
-						cf: {
-							cacheTtlByStatus: {
-								// Cache until 15 minutes before next GMT midnight
-								'200-299': Math.floor((fifteenMinutesBeforeGMTMidnight.getTime() - now.getTime()) / 1000),
-							},
-							cacheEverything: true,
-						},
-					}),
-				)
+				.then(({ NetHelpers }) => NetHelpers.loggingFetch(new URL('api/v3/data.json', 'https://where.durableobjects.live'), { logging: { level: 1, color: false } }))
 				.then((response) => {
 					if (response.ok) {
-						return response.json<`${string}${number}`[]>().then((doColos) => Array.from(new Set(doColos.map((doColo) => doColo.slice(0, 3).toUpperCase()))));
+						return response.json<DoData>().then((doData) =>
+							Array.from(
+								new Set(
+									Object.values(doData.colos)
+										.map((colo) => Object.keys(colo.hosts))
+										.flat(),
+								),
+							).map((doColo) => doColo.toUpperCase()),
+						);
 					} else {
 						throw new Error(`${response.status} ${response.statusText} (${response.headers.get('cf-ray')}) Failed to fetch DO colos: `);
 					}
