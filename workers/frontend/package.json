@@ -57,7 +57,7 @@
 		"@builder.io/qwik-city": "^1.14.1",
 		"@cloudflare/workers-types": "^4.20250823.0",
 		"@rollup/plugin-node-resolve": "^16.0.1",
-		"@tailwindcss/vite": "^4.1.11",
+		"@tailwindcss/vite": "^4.1.12",
 		"@types/leaflet": "^1.9.20",
 		"drizzle-kit": "^0.31.4",
 		"eslint-plugin-qwik": "^1.16.0",
