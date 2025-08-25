@@ -47,7 +47,7 @@
 	"dependencies": {
 		"@chainfuse/helpers": "^3.4.3",
 		"@chainfuse/types": "^2.10.24",
-		"drizzle-orm": "^0.44.2",
+		"drizzle-orm": "^0.44.4",
 		"iata-location": "^1.0.1",
 		"leaflet": "^1.9.4",
 		"zod": "^4.1.1"
