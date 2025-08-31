@@ -9,6 +9,7 @@ interface Secrets {
 	CF_API_TOKEN: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface TypedBindings {}
 
 export interface InstanceData {
