@@ -77,11 +77,11 @@ export default {
 	fetch: assetFetch,
 	async scheduled(event, env, ctx) {
 		const dbRef = env.PROBE_DB;
-		const d1Session = env.PROBE_DB.withSession('first-unconstrained');
+		const d1Session = env.PROBE_DB.withSession('first-primary');
 
 		function drizzleRef() {
 			return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
-				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : dbRef, {
+				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-primary') as unknown as D1Database) : dbRef, {
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					casing: 'snake_case',
 					cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(env.SQL_TTL, 10), strategy: 'all' }),
@@ -123,7 +123,7 @@ export default {
 						iata: instances.iata,
 					})
 					.from(instances)
-					.$withCache()
+					.$withCache(false)
 					.then((rows) =>
 						rows.map((row) => ({
 							...row,
