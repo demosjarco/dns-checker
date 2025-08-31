@@ -9,17 +9,9 @@
 	"preview_urls": false,
 	"route": { "pattern": "dns.demosjarco.dev", "custom_domain": true },
 	"minify": true,
+	"keep_names": false,
 	"upload_source_maps": true,
 	"observability": { "enabled": true },
-	"find_additional_modules": true,
-	"base_dir": "../..",
-	"rules": [
-		{
-			"type": "CommonJS",
-			"globs": ["node_modules/iata-location/dist/data/*.js"],
-			"fallthrough": true
-		}
-	],
 	"triggers": { "crons": ["0 * * * *"] },
 	"vars": {
 		"ENVIRONMENT": "production",
