@@ -15,6 +15,7 @@ concurrency:
 jobs:
   update-files:
     runs-on: ubuntu-latest
+    if: github.actor != 'demosjarco-prettier[bot]'
     permissions:
       contents: write
       pull-requests: write
