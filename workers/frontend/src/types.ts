@@ -1,5 +1,5 @@
 import type { DOLocations } from '@chainfuse/types';
-import type { DurableObject } from 'cloudflare:workers';
+import type { LocationTester } from '~do/locationTester.mjs';
 
 export interface EnvVars extends Secrets, Omit<Cloudflare.Env, 'LOCATION_TESTER'>, TypedBindings {
 	GIT_HASH?: string;
@@ -10,15 +10,8 @@ interface Secrets {
 	CF_API_TOKEN: string;
 }
 
-export declare class LocationTesterBase<E = unknown> extends DurableObject<E> {
-	public get iata(): Promise<string>;
-	public get fullColo(): Promise<string | undefined>;
-	public lockIn(iata: string): Promise<void>;
-	public nuke(): Promise<void>;
-}
-
 interface TypedBindings {
-	LOCATION_TESTER: DurableObjectNamespace<LocationTesterBase>;
+	LOCATION_TESTER: DurableObjectNamespace<LocationTester>;
 }
 
 export interface InstanceData {
