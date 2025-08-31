@@ -7,7 +7,7 @@
 		"build:preview": "vite build --ssr src/entry.preview.tsx",
 		"build:server": "vite build -c adapters/cloudflare-pages/vite.config.ts",
 		"build:types:cf": "wrangler types",
-		"build:types:tsc": "tsc --incremental --noEmit",
+		"build:types:tsc": "tsc --noEmit",
 		"build:types": "npm run build:types:cf && npm run build:types:tsc",
 		"build:db": "drizzle-kit generate --config db/drizzle.config.ts",
 		"dev": "vite --mode ssr",
