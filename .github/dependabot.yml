@@ -52,11 +52,6 @@ updates:
       interval: 'weekly'
     versioning-strategy: increase
     open-pull-requests-limit: 999
-    ignore:
-      # Match lts/*
-      - dependency-name: '@types/node'
-        versions:
-          - '>=23.0.0'
     groups:
       cloudflare:
         patterns:
