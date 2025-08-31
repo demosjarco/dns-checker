@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import type { Buffer } from 'node:buffer';
 import { PROBE_DB_D1_ID, type EnvVars } from '~/types';
 
 interface Trace extends Record<string, string> {
