@@ -18,6 +18,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
