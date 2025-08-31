@@ -55,7 +55,7 @@
 	"devDependencies": {
 		"@builder.io/qwik": "^1.16.0",
 		"@builder.io/qwik-city": "^1.16.0",
-		"@cloudflare/workers-types": "^4.20250823.0",
+		"@cloudflare/workers-types": "^4.20250831.0",
 		"@rollup/plugin-node-resolve": "^16.0.1",
 		"@tailwindcss/vite": "^4.1.12",
 		"@types/leaflet": "^1.9.20",
