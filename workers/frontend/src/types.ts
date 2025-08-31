@@ -1,6 +1,6 @@
 import type { DOLocations } from '@chainfuse/types';
 
-export interface EnvVars extends Secrets, manualCf {
+export interface EnvVars extends Secrets, TypedBindings {
 	GIT_HASH?: string;
 	CF_ACCOUNT_ID: string;
 }
@@ -9,7 +9,7 @@ interface Secrets {
 	CF_API_TOKEN: string;
 }
 
-interface manualCf {
+interface TypedBindings {
 	ENVIRONMENT: 'production';
 	NODE_ENV: 'production';
 	SQL_TTL: `${number}`;
