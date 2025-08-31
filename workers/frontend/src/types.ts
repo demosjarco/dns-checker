@@ -14,7 +14,7 @@ interface TypedBindings {
 	NODE_ENV: 'production';
 	SQL_TTL: `${number}`;
 	CF_ACCOUNT_ID: string;
-	LOCATION_TESTER: DurableObjectNamespace<import('./entry.cloudflare-workers').LocationTester>;
+	LOCATION_TESTER: DurableObjectNamespace<import('~do/locationTester.mjs').LocationTester>;
 	PROBE_DB: D1Database;
 	CF_VERSION_METADATA: WorkerVersionMetadata;
 	ASSET: Fetcher;
