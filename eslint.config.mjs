@@ -21,7 +21,7 @@ export default tseslint.config({
 		},
 	},
 	rules: {
-		'@typescript-eslint/no-explicit-any': 'off',
+		'@typescript-eslint/no-explicit-any': ['warn', { ignoreRestArgs: true }],
 		'@typescript-eslint/explicit-module-boundary-types': 'off',
 		'@typescript-eslint/no-inferrable-types': 'off',
 		'@typescript-eslint/no-non-null-assertion': 'off',
@@ -41,5 +41,7 @@ export default tseslint.config({
 		'@typescript-eslint/no-import-type-side-effects': 'error',
 		'@typescript-eslint/consistent-type-imports': ['error', { disallowTypeAnnotations: false }],
 		'no-async-promise-executor': 'off',
+		'@typescript-eslint/no-empty-object-type': ['error', { allowInterfaces: 'with-single-extends' }],
+		'@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true, ignoreVoidOperator: true }],
 	},
 });
