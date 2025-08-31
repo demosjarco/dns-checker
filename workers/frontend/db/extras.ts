@@ -92,6 +92,7 @@ export class SQLCache extends DrizzleCache {
 	 * This function accepts query and parameters that cached into key param, allowing you to retrieve response values for this query from the cache.
 	 * @param key - A hashed query and parameters.
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	override async get(key: string, tables: string[], isTag: boolean): Promise<any[] | undefined> {
 		const response = await this.cache.then(async (cache) => cache.match(this.getCacheKey(isTag ? { tag: key } : { key })));
 
@@ -113,6 +114,7 @@ export class SQLCache extends DrizzleCache {
 	 * For example, if a query uses the "users" and "posts" tables, you can store this information. Later, when the app executes any mutation statements on these tables, you can remove the corresponding key from the cache.
 	 * If you're okay with eventual consistency for your queries, you can skip this option.
 	 */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	override async put(hashedQuery: string, response: any, tables: string[], isTag: boolean, config?: CacheConfig): Promise<void> {
 		let ttl: number = this.globalTtl;
 		if (config?.ex) {
