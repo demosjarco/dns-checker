@@ -19,3 +19,5 @@ export interface InstanceData {
 	doId: string;
 	location: DOLocations;
 }
+
+export const PROBE_DB_D1_ID = '06e19e72-3d3e-4879-ad6e-2d2ee513d611' as const;

@@ -1,7 +1,6 @@
 import { DOLocations } from '@chainfuse/types';
 import type { Buffer } from 'node:buffer';
-import { PROBE_DB_D1_ID } from '~/extras';
-import type { EnvVars } from '~/types.js';
+import { PROBE_DB_D1_ID, type EnvVars } from '~/types.js';
 
 // @ts-ignore this gets generated automatically later in the build process
 import { fetch as assetFetch } from '../server/entry.cloudflare-pages';
