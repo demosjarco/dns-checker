@@ -1,5 +1,5 @@
 import { defineConfig } from 'drizzle-kit';
-import { PROBE_DB_D1_ID } from '~/types';
+import { PROBE_DB_D1_ID } from '~/extras';
 
 export default defineConfig({
 	dialect: 'sqlite',

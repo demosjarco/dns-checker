@@ -1,7 +1,7 @@
 import { component$, noSerialize, Slot } from '@builder.io/qwik';
 import { routeLoader$, type RequestHandler } from '@builder.io/qwik-city';
 import type { Airport } from '~/entry.cloudflare-workers';
-import { PROBE_DB_D1_ID } from '~/types';
+import { PROBE_DB_D1_ID } from '~/extras';
 
 export const onGet: RequestHandler = ({ cacheControl }) => {
 	// Control caching for this request for best performance and to reduce hosting costs:
