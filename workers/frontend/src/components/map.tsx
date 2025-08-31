@@ -96,8 +96,7 @@ export default component$(() => {
 			let hasValidMarkers = false;
 
 			// Create custom marker element
-			const markerSize: [number, number] = [32, 14];
-			const markerElement = await renderToString(<div class={`h-[${markerSize[1]}px] w-[${markerSize[0]}px] cursor-pointer bg-[url(/images/cf-pin.svg)] bg-contain bg-no-repeat`}></div>, { containerTagName: 'div' });
+			const markerElement = await renderToString(<div class={`h-[14px] w-[32px] cursor-pointer bg-[url(/images/cf-pin.svg)] bg-contain bg-no-repeat`}></div>, { containerTagName: 'div' });
 
 			await Promise.all(
 				uniqueIataCodes.map(async (iataCode) => {
@@ -123,7 +122,7 @@ export default component$(() => {
 							const mapMarker = marker([lat, lng], {
 								icon: divIcon({
 									html: markerElement.html,
-									iconSize: markerSize,
+									iconSize: [32, 14],
 									className: '',
 								}),
 							}).addTo(mapRef.value!);
