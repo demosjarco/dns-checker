@@ -1,6 +1,6 @@
+import { DurableObject } from 'cloudflare:workers';
 import { PROBE_DB_D1_ID } from '~/extras';
 import type { EnvVars } from '~/types';
-import { LocationTesterBase } from '~/types';
 
 interface Trace extends Record<string, string> {
 	fl: `${number}f${number}`;
@@ -21,7 +21,7 @@ interface Trace extends Record<string, string> {
 	kex: string;
 }
 
-export class LocationTester extends LocationTesterBase<EnvVars> {
+export class LocationTester extends DurableObject<EnvVars> {
 	private d1Session = this.env.PROBE_DB.withSession('first-unconstrained');
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
@@ -78,11 +78,11 @@ export class LocationTester extends LocationTesterBase<EnvVars> {
 		);
 	}
 
-	public override get iata() {
+	public get iata() {
 		return this.fl.then(({ colo }) => colo.toUpperCase());
 	}
 
-	public override get fullColo() {
+	public get fullColo() {
 		return Promise.all([
 			this.fl,
 			import('@chainfuse/helpers').then(({ NetHelpers }) =>
@@ -105,11 +105,11 @@ export class LocationTester extends LocationTesterBase<EnvVars> {
 		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
 	}
 
-	public override lockIn(iata: string) {
+	public lockIn(iata: string) {
 		return this.ctx.storage.put('iata', iata);
 	}
 
-	public override async nuke() {
+	public async nuke() {
 		await Promise.all([
 			// Alarm isn't deleted as part of `deleteAll()`
 			this.ctx.storage.deleteAlarm(),
