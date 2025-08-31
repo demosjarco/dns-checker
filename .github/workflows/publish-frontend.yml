@@ -98,7 +98,6 @@ jobs:
           wranglerVersion: ${{ steps.npm_wrangler_version.outputs.wrangler_version }}
           apiToken: ${{ secrets.WORKER_DEPLOY_CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          environment: ${{ (vars.ENVIRONMENT == 'production' && '') || vars.ENVIRONMENT }}
           workingDirectory: workers/frontend
           vars: |
             GIT_HASH
