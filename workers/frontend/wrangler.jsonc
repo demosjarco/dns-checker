@@ -16,7 +16,8 @@
 	"vars": {
 		"ENVIRONMENT": "production",
 		"NODE_ENV": "production",
-		"SQL_TTL": "86400"
+		// 1 hour * 60 minutes * 60 seconds
+		"SQL_TTL": "3600"
 	},
 	"assets": {
 		"binding": "ASSET",
