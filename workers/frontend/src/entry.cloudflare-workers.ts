@@ -134,9 +134,12 @@ export default {
 			),
 		]).then(async ([doIatas, instances]) => {
 			const instancesIatas = instances.map((instance) => instance.iata);
-			console.debug('doIatas', doIatas);
-			console.debug('instancesIatas', instancesIatas);
-			console.debug('instances', instances);
+			console.info('doIatas', doIatas.sort());
+			console.info('instancesIatas', instancesIatas.sort());
+			console.info(
+				'instances',
+				instances.sort((a, b) => a.iata.localeCompare(b.iata)),
+			);
 
 			// Find iatas that exist in instances but not in `doIatas` (should be deleted)
 			const iatasToDelete = instancesIatas.filter((instancesIata) => !doIatas.includes(instancesIata));
