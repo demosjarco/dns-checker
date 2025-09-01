@@ -22,7 +22,7 @@
 		"start:clean": "npm run clean && qwik build && npm run start",
 		"start:build": "qwik build && npm run start",
 		"start": "vite --open --mode ssr",
-		"serve": "wrangler dev --live-reload true",
+		"serve": "wrangler dev --x-remote-bindings --test-scheduled --live-reload true",
 		"qwik": "qwik",
 		"deploy:db": "wrangler d1 migrations apply PROBE_DB --remote"
 	},
