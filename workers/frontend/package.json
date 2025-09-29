@@ -55,7 +55,7 @@
 		"@rollup/plugin-node-resolve": "^16.0.1",
 		"@tailwindcss/vite": "^4.1.12",
 		"@types/leaflet": "^1.9.20",
-		"drizzle-kit": "^0.31.4",
+		"drizzle-kit": "^0.31.5",
 		"eslint-plugin-qwik": "^1.16.0",
 		"flowbite": "^3.1.2",
 		"prettier-plugin-tailwindcss": "^0.6.14",
