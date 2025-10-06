@@ -50,9 +50,9 @@
 		"zod": "^4.1.5"
 	},
 	"devDependencies": {
-		"@builder.io/qwik": "^1.16.0",
-		"@builder.io/qwik-city": "^1.16.0",
-		"@rollup/plugin-node-resolve": "^16.0.1",
+		"@builder.io/qwik": "^1.16.1",
+		"@builder.io/qwik-city": "^1.16.1",
+		"@rollup/plugin-node-resolve": "^16.0.2",
 		"@tailwindcss/vite": "^4.1.12",
 		"@types/leaflet": "^1.9.20",
 		"drizzle-kit": "^0.31.4",
