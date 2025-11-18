@@ -11,7 +11,7 @@
 	"minify": true,
 	"keep_names": false,
 	"upload_source_maps": true,
-	"observability": { "enabled": true },
+	"observability": { "logs": { "enabled": true }, "traces": { "enabled": true } },
 	"triggers": { "crons": ["0 * * * *"] },
 	"vars": {
 		"ENVIRONMENT": "production",
