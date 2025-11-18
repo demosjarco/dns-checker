@@ -14,7 +14,7 @@ const isLocal = process.env['GITHUB_ACTIONS'] !== 'true' && process.env['GIT_HAS
 
 if (isLocal) {
 	await import('wrangler').then(({ getPlatformProxy }) =>
-		getPlatformProxy({ experimental: { remoteBindings: true } }).then((proxy) => {
+		getPlatformProxy({ remoteBindings: true }).then((proxy) => {
 			platform = proxy;
 		}),
 	);
