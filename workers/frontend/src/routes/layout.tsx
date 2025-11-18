@@ -1,7 +1,12 @@
 import { component$, noSerialize, Slot } from '@builder.io/qwik';
 import { routeLoader$, type RequestHandler } from '@builder.io/qwik-city';
+import { SQLCache } from '@chainfuse/helpers/db';
+import { drizzle } from 'drizzle-orm/d1';
+import { DefaultLogger } from 'drizzle-orm/logger';
 import type { Airport } from '~/entry.cloudflare-workers';
 import { PROBE_DB_D1_ID } from '~/types';
+import { DebugLogWriter } from '~db/extras';
+import * as schema from '~db/schema';
 
 export const onGet: RequestHandler = ({ cacheControl }) => {
 	// Control caching for this request for best performance and to reduce hosting costs:
@@ -14,30 +19,27 @@ export const onGet: RequestHandler = ({ cacheControl }) => {
 	});
 };
 
-export const useD1Session = routeLoader$(({ platform }) => noSerialize(platform.env.PROBE_DB.withSession('first-unconstrained')));
-
-export const useDrizzleRef = routeLoader$(({ platform, resolveValue }) =>
-	Promise.all([import('drizzle-orm/d1'), resolveValue(useD1Session), import('drizzle-orm/logger'), import('~db/extras')]).then(([{ drizzle }, d1Session, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
-		noSerialize(
-			drizzle(typeof platform.env.PROBE_DB.withSession === 'function' ? (platform.env.PROBE_DB.withSession(d1Session?.getBookmark() ?? 'first-unconstrained') as unknown as D1Database) : platform.env.PROBE_DB, {
-				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-				casing: 'snake_case',
-				cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(platform.env.SQL_TTL, 10), strategy: 'all' }, platform.caches),
-			}),
-		),
+export const useDrizzleRef = routeLoader$(({ platform }) =>
+	noSerialize(
+		drizzle(platform.env.PROBE_DB.withSession() as unknown as D1Database, {
+			schema,
+			logger: new DefaultLogger({ writer: new DebugLogWriter() }),
+			casing: 'snake_case',
+			cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(platform.env.SQL_TTL, 10), strategy: 'all' }, globalThis.caches),
+		}),
 	),
 );
 
 export const useLocationTesterInstances = routeLoader$(({ resolveValue, fail }) =>
-	Promise.all([resolveValue(useDrizzleRef), import('~db/schema')]).then(async ([db, { instances }]) => {
+	resolveValue(useDrizzleRef).then(async (db) => {
 		if (db) {
-			return await db
+			return db
 				.select({
-					doId: instances.doId,
-					iata: instances.iata,
-					location: instances.location,
+					doId: schema.instances.doId,
+					iata: schema.instances.iata,
+					location: schema.instances.location,
 				})
-				.from(instances)
+				.from(schema.instances)
 				.then((rows) =>
 					rows.map((row) => ({
 						...row,
