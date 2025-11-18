@@ -46,6 +46,10 @@ updates:
           - 'microsoft/security-devops-action'
           - 'microsoft/DevSkim-Action'
           - 'ossf/*'
+      setup:
+        patterns:
+          - 'actions/checkout'
+          - 'actions/setup-*'
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
