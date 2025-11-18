@@ -76,21 +76,17 @@ export default {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 	fetch: assetFetch,
 	async scheduled(event, env, ctx) {
-		const dbRef = env.PROBE_DB;
-		const d1Session = env.PROBE_DB.withSession('first-primary');
-
-		function drizzleRef() {
-			return Promise.all([import('drizzle-orm/d1'), import('drizzle-orm/logger'), import('~db/extras')]).then(([{ drizzle }, { DefaultLogger }, { DebugLogWriter, SQLCache }]) =>
-				drizzle(typeof dbRef.withSession === 'function' ? (dbRef.withSession(d1Session.getBookmark() ?? 'first-primary') as unknown as D1Database) : dbRef, {
-					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-					casing: 'snake_case',
-					cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(env.SQL_TTL, 10), strategy: 'all' }),
-				}),
-			);
-		}
+		const db = await Promise.all([import('drizzle-orm/d1'), import('~db/schema'), import('drizzle-orm/logger'), import('~db/extras'), import('@chainfuse/helpers/db')]).then(([{ drizzle }, schema, { DefaultLogger }, { DebugLogWriter }, { SQLCache }]) =>
+			drizzle(env.PROBE_DB.withSession('first-primary') as unknown as D1Database, {
+				schema,
+				casing: 'snake_case',
+				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
+				cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(env.SQL_TTL, 10), strategy: 'all' }),
+			}),
+		);
 
 		// 1. Make sure all locations exist
-		await Promise.all([drizzleRef(), import('../db/schema')]).then(([db, { locations }]) =>
+		await import('~db/schema').then(({ locations }) =>
 			db
 				.insert(locations)
 				.values(Object.values(DOLocations).map((location) => ({ location })))
@@ -115,23 +111,24 @@ export default {
 						throw new Error(`${response.status} ${response.statusText} (${response.headers.get('cf-ray')}) Failed to fetch DO colos: `);
 					}
 				}),
-			Promise.all([drizzleRef(), import('../db/schema')]).then(([db, { instances }]) =>
-				db
-					.select({
-						doId: instances.doId,
-						location: instances.location,
-						iata: instances.iata,
-					})
-					.from(instances)
-					.$withCache(false)
-					.then((rows) =>
-						rows.map((row) => ({
-							...row,
-							doId: row.doId.toString('hex'),
-							iata: row.iata.toUpperCase(),
-						})),
-					),
-			),
+			import('~db/schema')
+				.then(({ instances }) =>
+					db
+						.select({
+							doId: instances.doId,
+							location: instances.location,
+							iata: instances.iata,
+						})
+						.from(instances)
+						.$withCache(false),
+				)
+				.then((rows) =>
+					rows.map((row) => ({
+						...row,
+						doId: row.doId.toString('hex'),
+						iata: row.iata.toUpperCase(),
+					})),
+				),
 		]).then(async ([doIatas, instances]) => {
 			const instancesIatas = instances.map((instance) => instance.iata);
 			console.info('doIatas', doIatas.sort());
@@ -153,9 +150,9 @@ export default {
 						instancesToDelete.map(async (instanceToDelete) => {
 							const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(instanceToDelete.doId), { locationHint: instanceToDelete.location });
 
-							await Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm'), stub.nuke()])
+							await Promise.all([import('~db/schema'), import('drizzle-orm/sql'), stub.nuke()])
 								// Delete from D1
-								.then(([db, { instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${instanceToDelete.doId})`)));
+								.then(([{ instances }, { eq, sql }]) => db.delete(instances).where(eq(instances.doId, sql<Buffer>`unhex(${instanceToDelete.doId})`)));
 						}),
 					),
 				);
@@ -251,8 +248,8 @@ export default {
 											ctx.waitUntil(doStub.lockIn(iataToCreate));
 											// Insert into D1
 											ctx.waitUntil(
-												Promise.all([drizzleRef(), import('../db/schema'), import('drizzle-orm')])
-													.then(([db, { instances }, { sql }]) =>
+												Promise.all([import('~db/schema'), import('drizzle-orm/sql')])
+													.then(([{ instances }, { sql }]) =>
 														db.insert(instances).values({
 															doId: sql<Buffer>`unhex(${doId.toString()})`,
 															iata: iataToCreate,
