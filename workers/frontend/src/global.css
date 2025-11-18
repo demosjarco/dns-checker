@@ -7,8 +7,8 @@
  */
 
 @import 'tailwindcss';
-@plugin "flowbite/plugin";
-@source "../../../node_modules/flowbite";
+@plugin 'flowbite/plugin';
+@source '../../../node_modules/flowbite';
 
 :root {
 	--qwik-dark-blue: #006ce9;
