@@ -6,7 +6,7 @@ import { DefaultLogger } from 'drizzle-orm/logger';
 import type { Airport } from '~/entry.cloudflare-workers';
 import { PROBE_DB_D1_ID } from '~/types';
 import { DebugLogWriter } from '~db/extras';
-import * as schema from '~db/schema';
+import * as schema from '~db/index';
 
 export const onGet: RequestHandler = ({ cacheControl }) => {
 	// Control caching for this request for best performance and to reduce hosting costs:

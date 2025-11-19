@@ -6,7 +6,14 @@ on:
       - production
     paths:
       - '.github/workflows/publish-frontend.yml'
-      - 'workers/frontend/**'
+      - 'adapters/**'
+      - 'db/**'
+      - 'do/**'
+      - 'public/**'
+      - 'src/**'
+      - '*.config.*js'
+      - '*.config.*ts'
+      - 'wrangler.jsonc'
   workflow_dispatch:
     inputs:
       environment:
@@ -38,13 +45,13 @@ jobs:
           node-version: lts/*
           check-latest: true
           cache: 'npm'
-      - run: npm ci --ignore-scripts --include-workspace-root --workspace frontend
-      - run: npm run-script install --if-present --include-workspace-root --workspace frontend
+      - run: npm ci --ignore-scripts
+      - run: npm run-script install --if-present
       # - name: Restore TS cache
       #   uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       #   with:
       #     path: |
-      #       workers/*/.tsbuildinfo
+      #       .tsbuildinfo
       #     key: tsc-${{ hashFiles('**/*.tsbuildinfo', '**/package-lock.json') }}
       #     restore-keys: |
       #       tsc-
@@ -53,43 +60,43 @@ jobs:
       #   uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       #   with:
       #     path: |
-      #       workers/frontend/server/**
+      #       server/**
       #     key: qwik-s-${{ hashFiles('**/*.tsbuildinfo', '**/package-lock.json') }}
       #     restore-keys: |
       #       qwik-s-
       #     enableCrossOsArchive: true
-      - run: npm --workspace frontend run build:types
+      - run: npm run build:types
       # - name: Save TS cache
       #   uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       #   with:
       #     path: |
-      #       workers/*/.tsbuildinfo
+      #       .tsbuildinfo
       #     key: tsc-${{ hashFiles('**/*.tsbuildinfo', '**/package-lock.json') }}
       #     enableCrossOsArchive: true
       # - name: Restore client cache
       #   uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       #   with:
       #     path: |
-      #       workers/frontend/dist/**
-      #     key: qwik-c-${{ hashFiles('workers/frontend/src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
+      #       dist/**
+      #     key: qwik-c-${{ hashFiles('src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
       #     enableCrossOsArchive: true
-      - run: npm --workspace frontend run build:client
+      - run: npm run build:client
       # - name: Save client cache
       #   uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       #   with:
       #     path: |
-      #       workers/frontend/dist/**
-      #     key: qwik-c-${{ hashFiles('workers/frontend/src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
+      #       dist/**
+      #     key: qwik-c-${{ hashFiles('src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
       #     enableCrossOsArchive: true
-      - run: npm --workspace frontend run build:server
+      - run: npm run build:server
       # - name: Save server cache
       #   uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       #   with:
       #     path: |
-      #       workers/frontend/server/**
-      #     key: qwik-s-${{ hashFiles('workers/frontend/src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
+      #       server/**
+      #     key: qwik-s-${{ hashFiles('src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
       #     enableCrossOsArchive: true
-      - run: npm --workspace frontend run lint
+      - run: npm run lint
       - run: echo "wrangler_version=$(npm ls wrangler --depth=0 --json | jq -r '.dependencies.wrangler.version')" >> $GITHUB_OUTPUT
         id: npm_wrangler_version
       - uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
@@ -98,7 +105,6 @@ jobs:
           wranglerVersion: ${{ steps.npm_wrangler_version.outputs.wrangler_version }}
           apiToken: ${{ secrets.WORKER_DEPLOY_CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: workers/frontend
           vars: |
             GIT_HASH
             CF_ACCOUNT_ID

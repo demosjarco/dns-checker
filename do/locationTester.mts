@@ -7,7 +7,7 @@ import { eq, sql } from 'drizzle-orm/sql';
 import type { Buffer } from 'node:buffer';
 import { PROBE_DB_D1_ID, type EnvVars } from '~/types';
 import { DebugLogWriter } from '~db/extras';
-import * as schema from '~db/schema';
+import * as schema from '~db/index';
 
 interface Trace extends Record<string, string> {
 	fl: `${number}f${number}`;

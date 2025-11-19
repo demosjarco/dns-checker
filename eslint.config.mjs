@@ -1,9 +1,11 @@
 import eslint from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
+import { qwikEslint9Plugin } from 'eslint-plugin-qwik';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config({
-	extends: [eslint.configs.recommended, ...tseslint.configs.recommendedTypeChecked, ...tseslint.configs.stylisticTypeChecked, eslintConfigPrettier],
+	ignores: ['dist/*', 'server/*', 'tmp/*', 'worker-configuration.d.ts'],
+	extends: [eslint.configs.recommended, tseslint.configs.recommendedTypeChecked, tseslint.configs.stylisticTypeChecked, eslintConfigPrettier, qwikEslint9Plugin.configs.recommended],
 	plugins: {
 		'@typescript-eslint': tseslint.plugin,
 	},
@@ -18,6 +20,9 @@ export default tseslint.config({
 				defaultProject: 'tsconfig.json',
 			},
 			tsconfigRootDir: import.meta.dirname,
+			ecmaFeatures: {
+				jsx: true,
+			},
 		},
 	},
 	rules: {

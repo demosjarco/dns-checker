@@ -150,7 +150,7 @@ stats.html
 .mf
 .rollup.cache
 dist
-workers/frontend/server
+/server
 *.tsbuildinfo
 
 # Cloudflare

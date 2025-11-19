@@ -23,5 +23,5 @@ jobs:
           node-version: lts/*
           check-latest: true
           cache: 'npm'
-      - run: npm ci --ignore-scripts --include-workspace-root --workspaces
+      - run: npm ci --ignore-scripts
       - run: npm run-script install --if-present

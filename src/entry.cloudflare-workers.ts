@@ -81,7 +81,7 @@ export default {
 			import('@chainfuse/helpers/net'),
 			import('@chainfuse/types'),
 			import('drizzle-orm/sql'),
-			import('~db/schema'),
+			import('~db/index'),
 		]).then(
 			async ([
 				//
