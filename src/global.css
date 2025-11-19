@@ -28,7 +28,7 @@
 /* MONO THEME
 @import 'flowbite/src/themes/mono'; */
 @plugin 'flowbite/plugin';
-@source '../../../node_modules/flowbite';
+@source '../node_modules/flowbite';
 
 :root {
 	--qwik-dark-blue: #006ce9;
