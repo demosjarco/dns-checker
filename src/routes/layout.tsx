@@ -25,7 +25,7 @@ export const useDrizzleRef = routeLoader$(({ platform }) =>
 			schema,
 			logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 			casing: 'snake_case',
-			cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(platform.env.SQL_TTL, 10), strategy: 'all' }, globalThis.caches),
+			cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(platform.env.SQL_TTL, 10), strategy: 'all' }, platform.caches ?? globalThis.caches),
 		}),
 	),
 );
