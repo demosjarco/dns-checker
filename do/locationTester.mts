@@ -1,5 +1,4 @@
 import { SQLCache } from '@chainfuse/helpers/db';
-import { NetHelpers } from '@chainfuse/helpers/net';
 import { DurableObject } from 'cloudflare:workers';
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
@@ -73,7 +72,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 		return data as unknown as Trace;
 	}
 	private get fl() {
-		return NetHelpers.loggingFetch(new URL('cdn-cgi/trace', 'https://demosjarco.dev'), {
+		return fetch(new URL('cdn-cgi/trace', 'https://demosjarco.dev'), {
 			cf: {
 				cacheTtlByStatus: {
 					// minutes * seconds
@@ -97,7 +96,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 	public get fullColo() {
 		return Promise.all([
 			this.fl,
-			NetHelpers.loggingFetch(new URL('Cloudflare-Mining/Cloudflare-Datamining/refs/heads/main/data/other/colos-id-map.json', 'https://raw.githubusercontent.com'), {
+			fetch(new URL('Cloudflare-Mining/Cloudflare-Datamining/refs/heads/main/data/other/colos-id-map.json', 'https://raw.githubusercontent.com'), {
 				cf: {
 					cacheTtlByStatus: {
 						// minutes * seconds
