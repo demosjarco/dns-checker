@@ -78,14 +78,12 @@ export default {
 	scheduled: (event, env, ctx) =>
 		Promise.all([
 			//
-			import('@chainfuse/helpers/net'),
 			import('@chainfuse/types'),
 			import('drizzle-orm/sql'),
 			import('~db/index'),
 		]).then(
 			async ([
 				//
-				{ NetHelpers },
 				{ DOLocations },
 				{ eq, sql },
 				schema,
@@ -174,12 +172,7 @@ export default {
 					if (iatasToCreate.length > 0) {
 						console.info('Creating iatas', iatasToCreate);
 
-						await Promise.all([
-							NetHelpers.cfApi(env.CF_API_TOKEN, { logging: { level: 1, color: false } })
-								.then((cfApi) => cfApi.loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID }))
-								.then((result) => result as LoadBalancerRegionResults),
-							import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>),
-						]).then(([{ regions }, allAirports]) =>
+						await Promise.all([import('cloudflare').then(({ Cloudflare }) => new Cloudflare({ apiToken: env.CF_API_TOKEN }).loadBalancers.regions.list({ account_id: env.CF_ACCOUNT_ID })).then((result) => result as LoadBalancerRegionResults), import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>)]).then(([{ regions }, allAirports]) =>
 							Promise.allSettled(
 								iatasToCreate.map(async (iataToCreate) => {
 									const iataLocation = allAirports[iataToCreate];
