@@ -72,7 +72,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 		return data as unknown as Trace;
 	}
 	private get fl() {
-		return fetch(new URL('cdn-cgi/trace', 'https://demosjarco.dev'), {
+		return fetch(new URL('cdn-cgi/trace', 'https://dns.demosjarco.dev'), {
 			cf: {
 				cacheTtlByStatus: {
 					// minutes * seconds
