@@ -19,13 +19,22 @@ export const onGet: RequestHandler = ({ cacheControl }) => {
 	});
 };
 
-export const useDrizzleRef = routeLoader$(({ platform }) =>
+export const useBrowserCachePolicy = routeLoader$(({ platform, request }) => {
+	const headers = (platform.request ?? request).headers;
+	const cacheControl = new Set((headers.get('Cache-Control')?.split(',') ?? []).map((directive) => directive.trim().toLowerCase()));
+	// RFC 7234: no-store forbids storing; no-cache/zero max-age require revalidation so we skip reads
+	const antiCacheHeader = cacheControl.has('no-store') || cacheControl.has('no-cache') || cacheControl.has('max-age=0') || cacheControl.has('s-maxage=0');
+
+	return !antiCacheHeader;
+});
+
+export const useDrizzleRef = routeLoader$(async ({ platform, resolveValue }) =>
 	noSerialize(
 		drizzle(platform.env.PROBE_DB.withSession() as unknown as D1Database, {
 			schema,
 			logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 			casing: 'snake_case',
-			cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(platform.env.SQL_TTL, 10), strategy: 'all' }, platform.caches ?? globalThis.caches),
+			cache: (await resolveValue(useBrowserCachePolicy)) ? new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(platform.env.SQL_TTL, 10), strategy: 'all' }, platform.caches ?? globalThis.caches) : undefined,
 		}),
 	),
 );
