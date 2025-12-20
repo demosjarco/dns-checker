@@ -39,27 +39,23 @@ export const useDrizzleRef = routeLoader$(async ({ platform, resolveValue }) =>
 	),
 );
 
-export const useLocationTesterInstances = routeLoader$(({ resolveValue, fail }) =>
-	resolveValue(useDrizzleRef).then(async (db) => {
-		if (db) {
-			return db
-				.select({
-					doId: schema.instances.doId,
-					iata: schema.instances.iata,
-					location: schema.instances.location,
-				})
-				.from(schema.instances)
-				.then((rows) =>
-					rows.map((row) => ({
-						...row,
-						iata: row.iata.toUpperCase(),
-						doId: row.doId.toString('hex'),
-					})),
-				);
-		} else {
-			return fail(500, { error: 'Unable to database reference' });
-		}
-	}),
+export const useLocationTesterInstances = routeLoader$(({ resolveValue }) =>
+	resolveValue(useDrizzleRef).then(async (db) =>
+		db!
+			.select({
+				doId: schema.instances.doId,
+				iata: schema.instances.iata,
+				location: schema.instances.location,
+			})
+			.from(schema.instances)
+			.then((rows) =>
+				rows.map((row) => ({
+					...row,
+					iata: row.iata.toUpperCase(),
+					doId: row.doId.toString('hex'),
+				})),
+			),
+	),
 );
 
 export const useIataLocations = routeLoader$(() => import('iata-location/data').then(({ default: allAirports }) => allAirports as Record<string, Airport>));
