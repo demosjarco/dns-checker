@@ -16,11 +16,6 @@ on:
       - 'wrangler.jsonc'
       - 'package*.json'
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Choose an environment to deploy to:'
-        required: true
-        type: environment
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -33,8 +28,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.environment || github.ref_name }}
-      url: https://${{ (inputs.environment || vars.ENVIRONMENT) != 'production' && format('{0}.', (inputs.environment || vars.ENVIRONMENT)) || '' }}dns.demosjarco.dev
+      name: ${{ github.ref_name }}
+      url: https://dns.demosjarco.dev
     steps:
       - uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
         with:
