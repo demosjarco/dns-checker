@@ -106,7 +106,7 @@ export default {
 					.onConflictDoNothing();
 
 				await Promise.all([
-					NetHelpers.loggingFetch(new URL('api/v3/data.json', 'https://where.durableobjects.live'), { logging: { level: 1, color: false } }).then((response) => {
+					fetch(new URL('api/v3/data.json', 'https://where.durableobjects.live')).then((response) => {
 						if (response.ok) {
 							return response.json<DoData>().then((doData) =>
 								Array.from(
