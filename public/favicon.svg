@@ -1,14 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 500 500">
-  <g clip-path="url(#a)">
-    <circle cx="250" cy="250" fill="#fff" r="250"/>
-    <path d="m367.87 418.45-61.17-61.18-.94.13v-.67L175.7 227.53l32.05-31.13L188.9 87.73 99.56 199.09c-15.22 15.42-18.03 40.51-7.08 59.03l55.83 93.11a46.82 46.82 0 0 0 40.73 22.81l27.65-.27 151.18 44.68Z" fill="#18B6F6"/>
-    <path d="m401.25 196.94-12.29-22.81-6.41-11.67-2.54-4.56-.26.26-33.66-58.63a47.07 47.07 0 0 0-41.27-23.75l-29.51.8-88.01.28a47.07 47.07 0 0 0-40.33 23.34L93.4 207l95.76-119.54L314.7 226.19l-22.3 22.67 13.35 108.54.13-.26v.26h-.26l.26.27 10.42 10.2 50.62 49.78c2.13 2 5.6-.4 4.13-2.96l-31.25-61.85 54.5-101.3 1.73-2c.67-.81 1.33-1.62 1.87-2.42a46.8 46.8 0 0 0 3.34-50.18Z" fill="#AC7EF4"/>
-    <path d="M315.1 225.65 189.18 87.6l17.9 108.14L175 227l130.5 130.27-11.75-108.14 21.37-23.48Z" fill="#fff"/>
-  </g>
-  <defs>
-    <clipPath id="a">
-      <path d="M0 0h500v500H0z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" aria-label="Global DNS queries icon" height="64" id="svg14" role="img" version="1.1" viewBox="0 0 64 64" width="64">
+  
+  <defs id="defs2">
+    <clipPath id="globeClip">
+      <circle cx="32" cy="28" id="circle1" r="16"/>
     </clipPath>
+    
+    <radialGradient cx="32" cy="24" gradientUnits="userSpaceOnUse" id="ocean" r="22">
+      <stop id="stop1" offset="0" stop-color="#93C5FD"/>
+      <stop id="stop2" offset="1" stop-color="#2563EB"/>
+    </radialGradient>
   </defs>
+  
+  
+  
+  
+  
+  <g id="g14">
+    <circle cx="32" cy="28" fill="url(#ocean)" id="circle2" r="16" stroke="#0B2A6F" stroke-width="2.5"/>
+    <g clip-path="url(#globeClip)" fill="none" id="g5" stroke="#DBEAFE" stroke-linecap="round" stroke-opacity="0.9" stroke-width="1.6">
+      
+      <path d="M16 28H48" id="path2"/>
+      <path d="M18 22C23 25 27.5 26.5 32 26.5C36.5 26.5 41 25 46 22" id="path3"/>
+      <path d="M18 34C23 31 27.5 29.5 32 29.5C36.5 29.5 41 31 46 34" id="path4"/>
+      
+      <ellipse cx="32" cy="28" id="ellipse4" rx="6.5" ry="16"/>
+      <ellipse cx="32" cy="28" id="ellipse5" rx="11" ry="16"/>
+    </g>
+    <g fill="#F59E0B" id="g8" stroke="#7C2D12" stroke-width="1.8">
+      <circle cx="10" cy="18" id="circle5" r="2.4"/>
+      <circle cx="54" cy="14" id="circle6" r="2.4"/>
+      <circle cx="56" cy="44" id="circle7" r="2.4"/>
+      <circle cx="12" cy="48" id="circle8" r="2.4"/>
+    </g>
+    <g fill="none" id="g11" stroke="#06B6D4" stroke-linecap="round" stroke-width="2.4">
+      
+      <path d="M12.5 18.5 Q20 12 23.5 20.5" id="path8"/>
+      
+      <path d="M51.5 14.5 Q44 10 40.5 19.5" id="path9"/>
+      
+      <path d="M54.5 44.5 Q46 46 43.5 37.5" id="path10"/>
+      
+      <path d="M14.5 48.5 Q20 52 23.5 39.5" id="path11"/>
+    </g>
+    <rect fill="#111827" height="10" id="rect11" rx="3.2" stroke="#334155" stroke-width="2" width="24" x="20" y="50"/>
+    <path d="M24 55H40" id="path12" stroke="#E5E7EB" stroke-linecap="round" stroke-width="2.2"/>
+  </g>
+  
 </svg>
