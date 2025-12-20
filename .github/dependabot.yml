@@ -80,14 +80,9 @@ updates:
           - 'tailwind*'
           - 'flowbite'
           - '@qwikest/icons'
-          - 'mermaid'
       db:
         patterns:
           - 'drizzle-*'
-      monorepo-management:
-        patterns:
-          - 'lerna'
-          - '@changesets/*'
       qwik:
         patterns:
           - '@builder.io/qwik'
