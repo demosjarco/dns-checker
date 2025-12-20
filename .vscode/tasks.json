@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build",
+			"dependsOn": ["Qwik Types"],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Qwik Types",
+			"type": "typescript",
+			"option": "watch",
+			"problemMatcher": ["$tsc-watch"],
+			"isBackground": true,
+			"presentation": {
+				"group": "qwik.compile"
+			},
+			"icon": {
+				"id": "symbol-type-parameter",
+				"color": "terminal.ansiBlue"
+			}
+		}
+	]
+}
