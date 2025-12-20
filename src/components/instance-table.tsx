@@ -1,6 +1,4 @@
-import { component$, type Signal } from '@builder.io/qwik';
-import type { FailReturn } from '@builder.io/qwik-city';
-import type { DOLocations } from '@chainfuse/types';
+import { component$ } from '@builder.io/qwik';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
 import type { InstanceData } from '~/types';
 
@@ -18,28 +16,8 @@ interface IataGroup {
 }
 
 export default component$(() => {
-	const instances = useLocationTesterInstances() as Readonly<
-		Signal<
-			| {
-					iata: string;
-					doId: string;
-					location: DOLocations;
-			  }[]
-			| FailReturn<{
-					error: string;
-			  }>
-		>
-	>;
+	const instances = useLocationTesterInstances();
 	const iataLocations = useIataLocations();
-
-	// Handle error state for instances
-	if ('error' in instances.value) {
-		return (
-			<div class="flex items-center justify-center p-10 text-lg text-red-600">
-				<p>Error loading instances: {instances.value.error}</p>
-			</div>
-		);
-	}
 
 	function getAverageLongitude(locationGroup: LocationGroup): number {
 		// Calculate average longitude for all IATA codes in this location group

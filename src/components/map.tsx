@@ -1,7 +1,5 @@
-import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type NoSerialize, type Signal } from '@builder.io/qwik';
-import type { FailReturn } from '@builder.io/qwik-city';
+import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type NoSerialize } from '@builder.io/qwik';
 import { renderToString } from '@builder.io/qwik/server';
-import type { DOLocations } from '@chainfuse/types';
 import { divIcon, LatLngBounds, Map as LeafletMap, marker, tileLayer } from 'leaflet';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
 import type { InstanceData } from '~/types';
@@ -18,33 +16,13 @@ export const getBoundaryBox = (map: LeafletMap) => {
 export default component$(() => {
 	const mapDiv = useSignal<HTMLDivElement>();
 	const mapRef = useSignal<NoSerialize<LeafletMap>>();
-	const instances = useLocationTesterInstances() as Readonly<
-		Signal<
-			| {
-					iata: string;
-					doId: string;
-					location: DOLocations;
-			  }[]
-			| FailReturn<{
-					error: string;
-			  }>
-		>
-	>;
+	const instances = useLocationTesterInstances();
 	const iataLocations = useIataLocations();
 	const userHasZoomed = useSignal(false);
 	const isAutoFitting = useSignal(false);
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 	useStyles$(leafletStyles);
-
-	// Handle error state for instances
-	if ('error' in instances.value) {
-		return (
-			<div class="flex items-center justify-center p-10 text-lg text-red-600">
-				<p>Error loading instances: {instances.value.error}</p>
-			</div>
-		);
-	}
 
 	// eslint-disable-next-line @typescript-eslint/unbound-method, qwik/no-use-visible-task
 	useVisibleTask$(async ({ track, cleanup }) => {
@@ -62,7 +40,7 @@ export default component$(() => {
 			}
 		}
 
-		if (mapDiv.value && !('error' in instances.value) && instances.value.length > 0) {
+		if (mapDiv.value && instances.value.length > 0) {
 			// Create map
 			mapRef.value = noSerialize(
 				new LeafletMap(mapDiv.value, {
