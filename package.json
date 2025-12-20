@@ -11,8 +11,6 @@
 		"build:types": "npm run build:types:cf && npm run build:types:tsc",
 		"build:db": "drizzle-kit generate --dialect=sqlite --casing=snake_case --schema=\"db/index.ts\" --out=\"db/migrations\"",
 		"postbuild:db": "prettier --write db",
-		"dev": "vite --mode ssr",
-		"dev:debug": "node --inspect-brk ./node_modules/vite/bin/vite.js --mode ssr --force",
 		"fmt": "prettier --check .",
 		"fmt:fix": "prettier --write .",
 		"lint": "eslint **/*.*ts*",
@@ -21,12 +19,12 @@
 		"preview:lhci": "qwik build preview && vite preview --port 8080",
 		"preclean": "npx -y rimraf@latest --glob ./**/.wrangler ./**/*.tsbuildinfo",
 		"clean": "npx -y rimraf@latest ./dist ./server ./tmp",
-		"start:clean": "npm run clean && qwik build && npm run start",
-		"start:build": "qwik build && npm run start",
-		"start": "vite --open --mode ssr",
-		"serve": "wrangler dev --test-scheduled --live-reload true",
-		"qwik": "qwik",
-		"deploy:db": "wrangler d1 migrations apply PROBE_DB --remote"
+		"dev": "node --inspect ./node_modules/vite/bin/vite.js --mode ssr --force",
+		"start:clean": "npm run clean && npm run start",
+		"start": "vite --mode ssr",
+		"serve": "wrangler dev --test-scheduled",
+		"deploy:db": "wrangler d1 migrations apply PROBE_DB --remote",
+		"qwik": "qwik"
 	},
 	"repository": {
 		"type": "git",
