@@ -93,7 +93,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 		return this.fl.then(({ colo }) => colo.toUpperCase());
 	}
 
-	public get fullColo() {
+	/** public get fullColo() {
 		return Promise.all([
 			this.fl,
 			fetch(new URL('Cloudflare-Mining/Cloudflare-Datamining/refs/heads/main/data/other/colos-id-map.json', 'https://raw.githubusercontent.com'), {
@@ -112,7 +112,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 				}
 			}),
 		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
-	}
+	}*/
 
 	public lockIn(iata: string) {
 		return this.ctx.storage.put('iata', iata);
