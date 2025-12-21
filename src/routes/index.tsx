@@ -23,7 +23,7 @@ export const useParamsCheck = routeLoader$(
 			zm
 				.object({
 					domain: zm.catch(zm.optional(zm.string().check(zm.trim(), zm.regex(zm.regexes.domain))), undefined),
-					type: zm.catch(zm._default(zm.enum(DNSRecordType), DNSRecordType['A Record (IPv4 Address)']), DNSRecordType['A Record (IPv4 Address)']),
+					type: zm.catch(zm._default(zm.enum(DNSRecordType), DNSRecordType['A (IPv4 Address)']), DNSRecordType['A (IPv4 Address)']),
 					expected: zm.catch(zm.optional(zm.string().check(zm.trim())), undefined),
 				})
 				.parseAsync(Object.fromEntries(url.searchParams.entries())),
