@@ -23,14 +23,16 @@ export interface InstanceData {
 export const PROBE_DB_D1_ID = 'c5bdb710-7b13-4b0f-8a55-2ccaaa94e48d' as const;
 
 export enum DNSRecordType {
-	'A Record (IPv4 Address)' = 'A',
-	'AAAA Record (IPv6 Address)' = 'AAAA',
-	'CNAME Record (Canonical Name)' = 'CNAME',
-	'MX Record (Mail Exchange)' = 'MX',
-	'TXT Record (Text)' = 'TXT',
-	'NS Record (Name Server)' = 'NS',
-	'SOA Record (Start of Authority)' = 'SOA',
-	'PTR Record (Pointer)' = 'PTR',
-	'SRV Record (Service)' = 'SRV',
-	'CAA Record (Certification Authority Authorization)' = 'CAA',
+	'A (IPv4 Address)' = 'A',
+	'AAAA (IPv6 Address)' = 'AAAA',
+	'CAA (CA authorizations)' = 'CAA',
+	'CNAME (Canonical Name)' = 'CNAME',
+	'MX (Mail Exchange)' = 'MX',
+	'NAPTR (Name Authority Pointer)' = 'NAPTR',
+	'NS (Name Server)' = 'NS',
+	'PTR (Pointer)' = 'PTR',
+	'SOA (Start of Authority)' = 'SOA',
+	'SRV (Service)' = 'SRV',
+	'TLSA (certificate associations)' = 'TLSA',
+	'TXT (Text)' = 'TXT',
 }
