@@ -1,5 +1,4 @@
 import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type NoSerialize } from '@builder.io/qwik';
-import { renderToString } from '@builder.io/qwik/server';
 import { divIcon, LatLngBounds, Map as LeafletMap, marker, tileLayer } from 'leaflet';
 import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
 import type { InstanceData } from '~/types';
@@ -73,9 +72,6 @@ export default component$(() => {
 			const bounds = new LatLngBounds([]);
 			let hasValidMarkers = false;
 
-			// Create custom marker element
-			const markerElement = await renderToString(<div class={`h-[14px] w-[32px] cursor-pointer bg-[url(/images/cf-pin.svg)] bg-contain bg-no-repeat`}></div>, { containerTagName: 'div' });
-
 			await Promise.all(
 				uniqueIataCodes.map(async (iataCode) => {
 					const airportInfo = iataLocations.value[iataCode];
@@ -86,25 +82,22 @@ export default component$(() => {
 
 						if (!isNaN(lat) && !isNaN(lng)) {
 							// Create popup content
-							const popupContent = await renderToString(
-								<div key={`popup-${iataCode}`}>
-									<div class="mb-2 text-lg font-bold">{iataCode}</div>
-									<div class="mb-1 text-sm">
-										<strong>Location:</strong> {[airportInfo.municipality, airportInfo.iso_country].join(', ')}
-									</div>
-								</div>,
-								{ containerTagName: 'div' },
-							);
+							const popupContent = `<div key="popup-${iataCode}">
+								<div class="mb-2 text-lg font-bold">${iataCode}</div>
+								<div class="mb-1 text-sm">
+									<strong>Location:</strong> ${[airportInfo.municipality, airportInfo.iso_country].join(', ')}
+								</div>
+							</div>`;
 
 							// Create marker and popup using Leaflet
 							const mapMarker = marker([lat, lng], {
 								icon: divIcon({
-									html: markerElement.html,
+									html: `<div class="h-[14px] w-[32px] cursor-pointer bg-[url(/images/cf-pin.svg)] bg-contain bg-no-repeat"></div>`,
 									iconSize: [32, 14],
 									className: '',
 								}),
 							}).addTo(mapRef.value!);
-							mapMarker.bindPopup(popupContent.html);
+							mapMarker.bindPopup(popupContent);
 
 							bounds.extend([lat, lng]);
 							hasValidMarkers = true;
