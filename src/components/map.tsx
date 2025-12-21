@@ -39,7 +39,7 @@ export default component$(() => {
 			}
 		}
 
-		if (mapDiv.value && instances.value.length > 0) {
+		if (mapDiv.value) {
 			// Create map
 			mapRef.value = noSerialize(
 				new LeafletMap(mapDiv.value, {
@@ -65,15 +65,15 @@ export default component$(() => {
 				isAutoFitting.value = false;
 			});
 
-			// Group unique IATA codes (case-insensitive)
-			const uniqueIataCodes = Array.from(new Set((instances.value as InstanceData[]).map((instance) => instance.iata.toUpperCase())));
+			if (instances.value.length > 0) {
+				// Group unique IATA codes (case-insensitive)
+				const uniqueIataCodes = Array.from(new Set((instances.value as InstanceData[]).map((instance) => instance.iata.toUpperCase())));
 
-			// Create markers and collect bounds
-			const bounds = new LatLngBounds([]);
-			let hasValidMarkers = false;
+				// Create markers and collect bounds
+				const bounds = new LatLngBounds([]);
+				let hasValidMarkers = false;
 
-			await Promise.all(
-				uniqueIataCodes.map(async (iataCode) => {
+				uniqueIataCodes.forEach((iataCode) => {
 					const airportInfo = iataLocations.value[iataCode];
 
 					if (airportInfo?.latitude_deg && airportInfo.longitude_deg) {
@@ -103,24 +103,25 @@ export default component$(() => {
 							hasValidMarkers = true;
 						}
 					}
-				}),
-			);
+				});
 
-			// Fit map to show all markers with some padding
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-			if (hasValidMarkers) {
-				fitMapBounds(bounds);
+				// Fit map to show all markers with some padding
+				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+				if (hasValidMarkers) {
+					fitMapBounds(bounds);
+				}
+
+				// Observe map div size changes
+				const resizeObserver = new ResizeObserver(() => {
+					if (hasValidMarkers) fitMapBounds(bounds);
+				});
+
+				resizeObserver.observe(mapDiv.value);
+
+				cleanup(() => {
+					if (mapDiv.value) resizeObserver.unobserve(mapDiv.value);
+				});
 			}
-
-			// Observe map div size changes
-			const resizeObserver = new ResizeObserver(() => {
-				if (hasValidMarkers) fitMapBounds(bounds);
-			});
-			resizeObserver.observe(mapDiv.value);
-
-			cleanup(() => {
-				if (mapDiv.value) resizeObserver.unobserve(mapDiv.value);
-			});
 		}
 	});
 
