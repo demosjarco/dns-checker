@@ -119,11 +119,14 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	public async nuke() {
-		await Promise.all([
-			// Alarm isn't deleted as part of `deleteAll()`
-			this.ctx.storage.deleteAlarm(),
-			this.ctx.storage.deleteAll(),
-		]);
+		// Alarm isn't deleted as part of `deleteAll()`
+		await this.ctx.storage.deleteAlarm();
+		await this.ctx.storage.deleteAll();
+		// To ensure that the DO is fully evicted, this.ctx.abort() is called
+		// `ctx.abort` throws an uncatchable error, so we yield to the event loop to avoid capturing it and let handlers finish cleaning up
+		setTimeout(() => {
+			this.ctx.abort('nuked');
+		}, 0);
 	}
 
 	override async alarm() {
