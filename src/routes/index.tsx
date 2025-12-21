@@ -1,9 +1,11 @@
 import { component$ } from '@builder.io/qwik';
-import type { DocumentHead } from '@builder.io/qwik-city';
+import { routeLoader$, type DocumentHead } from '@builder.io/qwik-city';
+import * as zm from 'zod/mini';
 import InstanceTable from '~/components/instance-table';
 import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
 import { useGitHash, useWorkerMetadata } from '~/routes/layout';
+import { DNSRecordType } from '~/types';
 
 export const head: DocumentHead = {
 	title: 'Welcome to Qwik',
@@ -14,6 +16,18 @@ export const head: DocumentHead = {
 		},
 	],
 };
+
+export const useParamsCheck = routeLoader$(
+	({ url }) =>
+		() =>
+			zm
+				.object({
+					domain: zm.catch(zm.optional(zm.string().check(zm.trim(), zm.regex(zm.regexes.domain))), undefined),
+					type: zm.catch(zm._default(zm.enum(DNSRecordType), DNSRecordType['A Record (IPv4 Address)']), DNSRecordType['A Record (IPv4 Address)']),
+					expected: zm.catch(zm.optional(zm.string().check(zm.trim())), undefined),
+				})
+				.parseAsync(Object.fromEntries(url.searchParams.entries())),
+);
 
 export default component$(() => {
 	const gitHash = useGitHash();
