@@ -89,6 +89,15 @@ export class LocationTester extends DurableObject<EnvVars> {
 		});
 	}
 
+	private get _iata() {
+		return this.ctx.storage.get<string>('iata').then((iata) => {
+			if (iata) {
+				return iata;
+			} else {
+				throw new Error('IATA not locked in');
+			}
+		});
+	}
 	public get iata() {
 		return this.fl.then(({ colo }) => colo.toUpperCase());
 	}
