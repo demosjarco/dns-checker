@@ -2,11 +2,14 @@ import { CryptoHelpers } from '@chainfuse/helpers/crypto';
 import { SQLCache } from '@chainfuse/helpers/db';
 import { zValidator } from '@hono/zod-validator';
 import { DurableObject } from 'cloudflare:workers';
+import * as dnsPacket from 'dns-packet';
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
 import { eq, sql } from 'drizzle-orm/sql';
 import { Hono } from 'hono';
-import type { Buffer } from 'node:buffer';
+import { Buffer } from 'node:buffer';
+import { randomInt } from 'node:crypto';
+import { connect, type TLSSocket } from 'node:tls';
 import * as z4 from 'zod/v4';
 import type { DNSJSON } from '~/types';
 import { DNSRecordType, PROBE_DB_D1_ID, type EnvVars } from '~/types';
@@ -32,32 +35,64 @@ interface Trace extends Record<string, string> {
 	kex: string;
 }
 
+interface BetterPacketTxtAnswer extends Omit<dnsPacket.TxtAnswer, 'data'> {
+	data: string | string[];
+}
+interface BetterPacket extends Omit<dnsPacket.Packet, 'answers'> {
+	answers: (dnsPacket.StringAnswer | dnsPacket.CaaAnswer | dnsPacket.MxAnswer | dnsPacket.NaptrAnswer | dnsPacket.SoaAnswer | dnsPacket.SrvAnswer | dnsPacket.TlsaAnswer | BetterPacketTxtAnswer)[];
+}
+
 export type honoApp = (typeof LocationTester)['prototype']['honoRoutes'];
 
 export class LocationTester extends DurableObject<EnvVars> {
 	private db: DrizzleD1Database<typeof schema>;
 
 	private app = new Hono<{ Bindings: EnvVars }>();
-	public honoRoutes = this.app.post(
-		'/doh',
-		zValidator(
-			'json',
-			z4.object({
-				server: z4.codec(z4.url({ protocol: /^https$/, hostname: z4.regexes.domain }), z4.instanceof(URL), {
-					decode: (urlString) => new URL(urlString),
-					encode: (url) => url.href,
+	public honoRoutes = this.app
+		.post(
+			'/doh',
+			zValidator(
+				'json',
+				z4.object({
+					server: z4.codec(z4.url({ protocol: /^https$/, hostname: z4.regexes.domain }), z4.instanceof(URL), {
+						decode: (urlString) => new URL(urlString),
+						encode: (url) => url.href,
+					}),
+					hostname: z4.string().trim().nonempty().regex(z4.regexes.domain),
+					rrtype: z4.enum(DNSRecordType),
+					useCache: z4.boolean().optional(),
 				}),
-				hostname: z4.string().trim().nonempty().regex(z4.regexes.domain),
-				rrtype: z4.enum(DNSRecordType),
-				useCache: z4.boolean().optional(),
-			}),
-		),
-		async (c) => {
-			const { server, hostname, rrtype, useCache } = c.req.valid('json');
+			),
+			async (c) => {
+				const { server, hostname, rrtype, useCache } = c.req.valid('json');
 
-			return c.json(await this.getDohQuery(server, hostname, rrtype, c.req.raw.signal, useCache));
-		},
-	);
+				return this.getDohQuery(server, hostname, rrtype, c.req.raw.signal, useCache)
+					.then((result) => c.json(result, 200))
+					.catch((err) => c.text(err instanceof Error || err instanceof DOMException ? err.message : JSON.stringify(err), 500));
+			},
+		)
+		.post(
+			'/dot',
+			zValidator(
+				'json',
+				z4.object({
+					server: z4.codec(z4.url({ protocol: /^tls$/, hostname: z4.regexes.domain }), z4.instanceof(URL), {
+						decode: (urlString) => new URL(urlString),
+						encode: (url) => url.href,
+					}),
+					hostname: z4.string().trim().nonempty().regex(z4.regexes.domain),
+					rrtype: z4.enum(DNSRecordType),
+					useCache: z4.boolean().optional(),
+				}),
+			),
+			async (c) => {
+				const { server, hostname, rrtype, useCache } = c.req.valid('json');
+
+				return this.getDotQuery(server, hostname, rrtype, c.req.raw.signal, useCache)
+					.then((result) => c.json(result, 200))
+					.catch((err) => c.text(err instanceof Error || err instanceof DOMException ? err.message : JSON.stringify(err), 500));
+			},
+		);
 
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
@@ -204,7 +239,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 
 					this.ctx.waitUntil(
 						CryptoHelpers.generateETag(response).then((etag) => {
-							response!.headers.set('ETag', etag);
+							response?.headers.set('ETag', etag);
 							return cache?.put(request, response!);
 						}),
 					);
@@ -212,13 +247,146 @@ export class LocationTester extends DurableObject<EnvVars> {
 
 				switch (rrtype) {
 					case DNSRecordType['TXT (Text)']:
-						return json.Answer.map((a) => [a.data.replace(/['"]+/g, '')]);
+						return json.Answer.map((a) => (Array.isArray(a.data) ? a.data : [a.data]));
 					default:
 						return json.Answer.map((a) => a.data);
 				}
 			});
 		} else {
 			throw new Error(`${response.status} ${response.statusText}`, { cause: await response.text() });
+		}
+	}
+
+	public async getDotQuery(server: URL, hostname: string, rrtype: DNSRecordType, signal?: AbortSignal, useCache: boolean = true) {
+		server.searchParams.set('name', hostname);
+		server.searchParams.set('type', rrtype);
+		const fakeRequest = new Request(server, {
+			headers: {
+				Accept: 'application/dns-json',
+			},
+			signal,
+		});
+		const cache = useCache ? await caches.open(`dns:${await this._iata}`) : undefined;
+
+		// Try to get from cache first
+		let fakeResponse = await cache?.match(fakeRequest);
+		const fromCache = Boolean(fakeResponse);
+
+		// Not in cache, fetch from origin
+		fakeResponse ??= await new Promise((resolve, reject) => {
+			// eslint-disable-next-line prefer-const
+			let client: TLSSocket | undefined;
+			const onAbort = () => {
+				client?.destroy(new Error(signal?.reason instanceof DOMException ? signal.reason.message : signal?.reason instanceof Error ? signal.reason.message : signal?.reason ? JSON.stringify(signal.reason) : 'AbortError'));
+				reject(new Error(signal?.reason instanceof DOMException ? signal.reason.message : signal?.reason instanceof Error ? signal.reason.message : signal?.reason ? JSON.stringify(signal.reason) : 'AbortError'));
+			};
+			signal?.addEventListener('abort', onAbort, { once: true });
+
+			let response = Buffer.from(new Uint8Array(0));
+			let expectedLength = 0;
+
+			const dnsQueryBuf = dnsPacket.streamEncode({
+				type: 'query',
+				// [inclusive, exclusive)
+				id: randomInt(1, 65535),
+				flags: dnsPacket.RECURSION_DESIRED,
+				questions: [
+					{
+						type: rrtype,
+						name: hostname,
+					},
+				],
+			});
+
+			client = connect({
+				minVersion: 'TLSv1.2',
+				maxVersion: 'TLSv1.3',
+				port: server.port === '' ? 853 : parseInt(server.port, 10),
+				host: server.hostname,
+				...(server.pathname !== '' && { path: server.pathname }),
+			});
+
+			client.once('error', reject);
+			client.once('secureConnect', () => client.write(dnsQueryBuf));
+			client.on('data', (data: Buffer) => {
+				if (response.byteLength === 0) {
+					expectedLength = data.readUInt16BE(0);
+					if (expectedLength < 12) {
+						reject(new Error('Below DNS minimum packet length (DNS Header is 12 bytes)'));
+					}
+					response = Buffer.from(data);
+				} else {
+					response = Buffer.concat([response, data]);
+				}
+
+				/**
+				 * @link https://tools.ietf.org/html/rfc7858#section-3.3
+				 * @link https://tools.ietf.org/html/rfc1035#section-4.2.2
+				 * The message is prefixed with a two byte length field which gives the message length, excluding the two byte length field.
+				 */
+				if (response.length === expectedLength + 2) {
+					client.destroy();
+
+					const packet = dnsPacket.streamDecode(response);
+					resolve(
+						new Response(
+							JSON.stringify({
+								...packet,
+								answers: (packet.answers ?? []).map((a) => {
+									if ('data' in a) {
+										if (Array.isArray(a.data)) {
+											return { ...a, data: a.data.map((part) => part.toString()) };
+										} else if (Buffer.isBuffer(a.data)) {
+											return { ...a, data: a.data.toString() };
+										} else if (typeof a.data === 'object') {
+											return { ...a, data: a.data };
+										} else {
+											return { ...a, data: a.data.toString() };
+										}
+									} else {
+										return a;
+									}
+								}),
+							}),
+							{
+								headers: { 'Content-Type': 'application/dns-json' },
+							},
+						),
+					);
+				}
+			});
+			client.once('end', () => signal?.removeEventListener('abort', onAbort));
+		});
+
+		if (fakeResponse?.ok) {
+			const cacheClone = useCache ? fakeResponse.clone() : undefined;
+
+			return fakeResponse.json<BetterPacket>().then((json) => {
+				if (useCache && !fromCache) {
+					// Re-assign response to make it mutable
+					fakeResponse = new Response(cacheClone!.body, fakeResponse);
+
+					const answersWithTtl = json.answers.filter((a) => typeof a.ttl === 'number');
+					const ttl = answersWithTtl.length > 0 ? Math.min(...answersWithTtl.map((a) => a.ttl!)) : 0;
+					fakeResponse.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
+
+					this.ctx.waitUntil(
+						CryptoHelpers.generateETag(fakeResponse).then((etag) => {
+							fakeResponse?.headers.set('ETag', etag);
+							return cache?.put(fakeRequest, fakeResponse!);
+						}),
+					);
+				}
+
+				switch (rrtype) {
+					case DNSRecordType['TXT (Text)']:
+						return json.answers.map((a) => (Array.isArray(a.data) ? a.data : [a.data]));
+					default:
+						return json.answers.map((a) => a.data);
+				}
+			});
+		} else {
+			throw new Error(`${fakeResponse?.status} ${fakeResponse?.statusText}`, { cause: await fakeResponse?.text() });
 		}
 	}
 
