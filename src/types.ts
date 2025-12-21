@@ -20,7 +20,7 @@ export interface InstanceData {
 	location: DOLocations;
 }
 
-export const PROBE_DB_D1_ID = 'b6f73c1f-0472-466e-9051-b2a0d7fd3202' as const;
+export const PROBE_DB_D1_ID = 'c5bdb710-7b13-4b0f-8a55-2ccaaa94e48d' as const;
 
 export enum DNSRecordType {
 	'A Record (IPv4 Address)' = 'A',

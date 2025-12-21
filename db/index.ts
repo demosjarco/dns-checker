@@ -1,6 +1,6 @@
 import type { DOLocations } from '@chainfuse/types';
-import { sql, type SQL } from 'drizzle-orm';
-import { sqliteTable, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { isNotNull, or, sql, type SQL } from 'drizzle-orm/sql';
+import { check, sqliteTable, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 /**
  * @returns a copy of string `x` with all ASCII characters converted to lower case
@@ -15,6 +15,8 @@ export const locations = sqliteTable(
 	'locations',
 	(l) => ({
 		location: l.text({ mode: 'text' }).primaryKey().notNull().$type<DOLocations>(),
+		doh: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
+		dot: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
 	}),
 	(l) => [uniqueIndex('case_insensitive_location').on(lower(l.location))],
 );
@@ -34,3 +36,15 @@ export const instances = sqliteTable('instances', (i) => ({
 	iso_country: i.text({ mode: 'text' }).notNull(),
 	iso_region: i.text({ mode: 'text' }),
 }));
+
+export const global_servers = sqliteTable(
+	'global_servers',
+	(gs) => ({
+		doh: gs.text({ mode: 'text' }).unique(),
+		dot: gs.text({ mode: 'text' }).unique(),
+	}),
+	(gs) => [
+		//
+		check('global_servers_has_dns_endpoint', or(isNotNull(gs.doh), isNotNull(gs.dot))!),
+	],
+);

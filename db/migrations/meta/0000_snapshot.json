@@ -1,9 +1,49 @@
 {
 	"version": "6",
 	"dialect": "sqlite",
-	"id": "b0abe96e-157a-484c-887f-9a3d5aa68a64",
+	"id": "a27a4efc-0f6f-4b37-a7ac-875fe5592000",
 	"prevId": "00000000-0000-0000-0000-000000000000",
 	"tables": {
+		"global_servers": {
+			"name": "global_servers",
+			"columns": {
+				"doh": {
+					"name": "doh",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"dot": {
+					"name": "dot",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				}
+			},
+			"indexes": {
+				"global_servers_doh_unique": {
+					"name": "global_servers_doh_unique",
+					"columns": ["doh"],
+					"isUnique": true
+				},
+				"global_servers_dot_unique": {
+					"name": "global_servers_dot_unique",
+					"columns": ["dot"],
+					"isUnique": true
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"checkConstraints": {
+				"global_servers_has_dns_endpoint": {
+					"name": "global_servers_has_dns_endpoint",
+					"value": "(\"global_servers\".\"doh\" is not null or \"global_servers\".\"dot\" is not null)"
+				}
+			}
+		},
 		"instances": {
 			"name": "instances",
 			"columns": {
@@ -85,6 +125,22 @@
 					"primaryKey": true,
 					"notNull": true,
 					"autoincrement": false
+				},
+				"doh": {
+					"name": "doh",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'[]'"
+				},
+				"dot": {
+					"name": "dot",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": "'[]'"
 				}
 			},
 			"indexes": {
