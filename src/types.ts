@@ -36,3 +36,20 @@ export enum DNSRecordType {
 	'TLSA (certificate associations)' = 'TLSA',
 	'TXT (Text)' = 'TXT',
 }
+
+export interface DNSJSON {
+	Question: Question[];
+	Answer: Answer[];
+}
+
+interface Question {
+	name: string;
+	type: number;
+}
+
+interface Answer {
+	name: string;
+	type: number;
+	data: string;
+	TTL: number;
+}
