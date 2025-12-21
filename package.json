@@ -44,8 +44,10 @@
 	"dependencies": {
 		"@chainfuse/helpers": "^4.2.9",
 		"@chainfuse/types": "^4.2.3",
+		"@hono/zod-validator": "^0.7.6",
 		"cloudflare": "^5.2.0",
 		"drizzle-orm": "^0.45.1",
+		"hono": "^4.11.1",
 		"iata-location": "^1.0.1",
 		"leaflet": "^1.9.4",
 		"zod": "^4.2.1"

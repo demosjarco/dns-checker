@@ -1,10 +1,15 @@
+import { CryptoHelpers } from '@chainfuse/helpers/crypto';
 import { SQLCache } from '@chainfuse/helpers/db';
+import { zValidator } from '@hono/zod-validator';
 import { DurableObject } from 'cloudflare:workers';
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
 import { eq, sql } from 'drizzle-orm/sql';
+import { Hono } from 'hono';
 import type { Buffer } from 'node:buffer';
-import { PROBE_DB_D1_ID, type EnvVars } from '~/types';
+import * as z4 from 'zod/v4';
+import type { DNSJSON } from '~/types';
+import { DNSRecordType, PROBE_DB_D1_ID, type EnvVars } from '~/types';
 import { DebugLogWriter } from '~db/extras';
 import * as schema from '~db/index';
 
@@ -27,8 +32,33 @@ interface Trace extends Record<string, string> {
 	kex: string;
 }
 
+export type honoApp = (typeof LocationTester)['prototype']['honoRoutes'];
+
 export class LocationTester extends DurableObject<EnvVars> {
 	private db: DrizzleD1Database<typeof schema>;
+
+	private app = new Hono<{ Bindings: EnvVars }>();
+	public honoRoutes = this.app.post(
+		'/doh',
+		zValidator(
+			'json',
+			z4.object({
+				server: z4.codec(z4.url({ protocol: /^https$/, hostname: z4.regexes.domain }), z4.instanceof(URL), {
+					decode: (urlString) => new URL(urlString),
+					encode: (url) => url.href,
+				}),
+				hostname: z4.string().trim().nonempty().regex(z4.regexes.domain),
+				rrtype: z4.enum(DNSRecordType),
+				useCache: z4.boolean().optional(),
+			}),
+		),
+		async (c) => {
+			const { server, hostname, rrtype, useCache } = c.req.valid('json');
+
+			return c.json(await this.getDohQuery(server, hostname, rrtype, c.req.raw.signal, useCache));
+		},
+	);
+
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
 
@@ -136,6 +166,60 @@ export class LocationTester extends DurableObject<EnvVars> {
 		setTimeout(() => {
 			this.ctx.abort('nuked');
 		}, 0);
+	}
+
+	override fetch(request: Request) {
+		return this.app.fetch(request, this.env, this.ctx as unknown as ExecutionContext);
+	}
+
+	public async getDohQuery(server: URL, hostname: string, rrtype: DNSRecordType, signal?: AbortSignal, useCache: boolean = true) {
+		server.searchParams.set('name', hostname);
+		server.searchParams.set('type', rrtype);
+
+		const request = new Request(server, {
+			headers: {
+				Accept: 'application/dns-json',
+			},
+			signal,
+		});
+		const cache = useCache ? await caches.open(`dns:${await this._iata}`) : undefined;
+
+		// Try to get from cache first
+		let response = await cache?.match(request);
+		const fromCache = Boolean(response);
+
+		// Not in cache, fetch from origin
+		response ??= await fetch(request);
+
+		if (response.ok) {
+			const cacheClone = useCache ? response.clone() : undefined;
+
+			return response.json<DNSJSON>().then((json) => {
+				if (useCache && !fromCache) {
+					// Re-assign response to make it mutable
+					response = new Response(cacheClone!.body, response);
+
+					const ttl = json.Answer.length > 0 ? Math.min(...json.Answer.map((a) => a.TTL)) : 0;
+					response.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
+
+					this.ctx.waitUntil(
+						CryptoHelpers.generateETag(response).then((etag) => {
+							response!.headers.set('ETag', etag);
+							return cache?.put(request, response!);
+						}),
+					);
+				}
+
+				switch (rrtype) {
+					case DNSRecordType['TXT (Text)']:
+						return json.Answer.map((a) => [a.data.replace(/['"]+/g, '')]);
+					default:
+						return json.Answer.map((a) => a.data);
+				}
+			});
+		} else {
+			throw new Error(`${response.status} ${response.statusText}`, { cause: await response.text() });
+		}
 	}
 
 	override async alarm() {
