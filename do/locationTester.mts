@@ -107,13 +107,17 @@ export class LocationTester extends DurableObject<EnvVars> {
 		ctx.waitUntil(
 			this.ctx.storage.getAlarm().then(async (alarm) => {
 				if (!alarm) {
-					// Calculate next GMT midnight
-					const now = new Date();
-					const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
-					await this.ctx.storage.setAlarm(nextGMTMidnight);
+					await this.ctx.storage.setAlarm(this.getNextTopOfHour());
 				}
 			}),
 		);
+	}
+
+	private getNextTopOfHour(base: Date = new Date()) {
+		const next = new Date(base);
+		next.setUTCMinutes(0, 0, 0);
+		next.setUTCHours(next.getUTCHours() + 1);
+		return next;
 	}
 
 	private parseTraceData(text: string): Trace {
@@ -193,6 +197,8 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	public async nuke() {
+		// Delete from D1
+		await this.db.delete(schema.instances).where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
 		// Alarm isn't deleted as part of `deleteAll()`
 		await this.ctx.storage.deleteAlarm();
 		await this.ctx.storage.deleteAll();
@@ -258,6 +264,8 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	public async getDotQuery(server: URL, hostname: string, rrtype: DNSRecordType, signal?: AbortSignal, useCache: boolean = true) {
+		// CF Cache hard requires http or https protocol
+		server.protocol = 'https:';
 		server.searchParams.set('name', hostname);
 		server.searchParams.set('type', rrtype);
 		const fakeRequest = new Request(server, {
@@ -391,18 +399,14 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	override async alarm() {
-		// Calculate next GMT midnight
-		const now = new Date();
-		const nextGMTMidnight = new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
-		this.ctx.waitUntil(this.ctx.storage.setAlarm(nextGMTMidnight));
+		this.ctx.waitUntil(this.ctx.storage.setAlarm(this.getNextTopOfHour()));
 
 		// Self nuke if no longer in original location
-		await Promise.all([this.ctx.storage.get<string>('iata'), this.iata]).then(([storedIata, currentIata]) => {
+		await Promise.all([this.ctx.storage.get<string>('iata'), this.iata]).then(async ([storedIata, currentIata]) => {
 			if (storedIata === currentIata) {
 				console.debug('Verified', storedIata, "hasn't moved");
 			} else {
-				this.ctx.waitUntil(this.db.delete(schema.instances).where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`)));
-				this.ctx.waitUntil(this.nuke());
+				await this.nuke();
 			}
 		});
 
@@ -412,11 +416,10 @@ export class LocationTester extends DurableObject<EnvVars> {
 				doId: schema.instances.doId,
 			})
 			.from(schema.instances)
-			.where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
+			.where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
+			.limit(1);
 		if (!row) {
-			// Delete from D1
-			this.ctx.waitUntil(this.db.delete(schema.instances).where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`)));
-			this.ctx.waitUntil(this.nuke());
+			await this.nuke();
 		}
 	}
 }
