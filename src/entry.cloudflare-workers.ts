@@ -85,7 +85,7 @@ export default {
 			async ([
 				//
 				{ DOLocations },
-				{ eq, sql },
+				{ sql },
 				schema,
 			]) => {
 				const db = await import('drizzle-orm/d1').then(async ({ drizzle }) =>
@@ -155,10 +155,7 @@ export default {
 								instancesToDelete.map(async (instanceToDelete) => {
 									const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(instanceToDelete.doId), { locationHint: instanceToDelete.location });
 
-									await stub
-										.nuke()
-										// Delete from D1
-										.then(() => db.delete(schema.instances).where(eq(schema.instances.doId, sql<Buffer>`unhex(${instanceToDelete.doId})`)));
+									await stub.nuke();
 								}),
 							),
 						);
@@ -244,11 +241,9 @@ export default {
 												if (actualIata === iataToCreate) {
 													created = true;
 
-													// Write something to storage to lock in the colo
-													ctx.waitUntil(doStub.lockIn(iataToCreate));
-													// Insert into D1
-													ctx.waitUntil(
-														db
+													try {
+														// Insert into D1
+														await db
 															.insert(schema.instances)
 															.values({
 																doId: sql<Buffer>`unhex(${doId.toString()})`,
@@ -261,10 +256,13 @@ export default {
 																...(['US', 'CA'].includes(iataLocation.iso_country.toUpperCase()) && { iso_region: iataLocation.iso_region.split('-')[1]!.toUpperCase() }),
 																location: locationHint,
 															})
-															.then(() => console.debug(`Attempt ${i}:`, 'Saved', iataToCreate))
-															// Something D1 failed, nuke the colo
-															.catch(() => doStub.nuke()),
-													);
+															.then(() => console.debug(`Attempt ${i}:`, 'Saved', iataToCreate));
+														// Write something to storage to lock in the colo
+														await doStub.lockIn(iataToCreate);
+													} catch (error) {
+														// Something D1 failed, nuke the colo
+														ctx.waitUntil(doStub.nuke());
+													}
 												} else {
 													console.debug(`Attempt ${i}:`, `Failed to make ${iataToCreate},`, attempts - i - 1, 'retries left');
 													// Didn't spawn where we wanted, nuke it
