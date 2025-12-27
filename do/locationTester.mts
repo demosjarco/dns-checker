@@ -1,16 +1,13 @@
 import { CryptoHelpers } from '@chainfuse/helpers/crypto';
 import { SQLCache } from '@chainfuse/helpers/db';
-import { zValidator } from '@hono/zod-validator';
 import { DurableObject } from 'cloudflare:workers';
 import * as dnsPacket from 'dns-packet';
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
 import { eq, sql } from 'drizzle-orm/sql';
-import { Hono } from 'hono';
 import { Buffer } from 'node:buffer';
 import { randomInt } from 'node:crypto';
 import { connect, type TLSSocket } from 'node:tls';
-import * as z4 from 'zod/v4';
 import type { DNSJSON } from '~/types';
 import { DNSRecordType, PROBE_DB_D1_ID, type EnvVars } from '~/types';
 import { DebugLogWriter } from '~db/extras';
@@ -42,57 +39,8 @@ interface BetterPacket extends Omit<dnsPacket.Packet, 'answers'> {
 	answers: (dnsPacket.StringAnswer | dnsPacket.CaaAnswer | dnsPacket.MxAnswer | dnsPacket.NaptrAnswer | dnsPacket.SoaAnswer | dnsPacket.SrvAnswer | dnsPacket.TlsaAnswer | BetterPacketTxtAnswer)[];
 }
 
-export type honoApp = (typeof LocationTester)['prototype']['honoRoutes'];
-
 export class LocationTester extends DurableObject<EnvVars> {
 	private db: DrizzleD1Database<typeof schema>;
-
-	private app = new Hono<{ Bindings: EnvVars }>();
-	public honoRoutes = this.app
-		.post(
-			'/doh',
-			zValidator(
-				'json',
-				z4.object({
-					server: z4.codec(z4.url({ protocol: /^https$/, hostname: z4.regexes.domain }), z4.instanceof(URL), {
-						decode: (urlString) => new URL(urlString),
-						encode: (url) => url.href,
-					}),
-					hostname: z4.string().trim().nonempty().regex(z4.regexes.domain),
-					rrtype: z4.enum(DNSRecordType),
-					useCache: z4.boolean().optional(),
-				}),
-			),
-			async (c) => {
-				const { server, hostname, rrtype, useCache } = c.req.valid('json');
-
-				return this.getDohQuery(server, hostname, rrtype, c.req.raw.signal, useCache)
-					.then((result) => c.json(result, 200))
-					.catch((err) => c.text(err instanceof Error || err instanceof DOMException ? err.message : JSON.stringify(err), 500));
-			},
-		)
-		.post(
-			'/dot',
-			zValidator(
-				'json',
-				z4.object({
-					server: z4.codec(z4.url({ protocol: /^tls$/, hostname: z4.regexes.domain }), z4.instanceof(URL), {
-						decode: (urlString) => new URL(urlString),
-						encode: (url) => url.href,
-					}),
-					hostname: z4.string().trim().nonempty().regex(z4.regexes.domain),
-					rrtype: z4.enum(DNSRecordType),
-					useCache: z4.boolean().optional(),
-				}),
-			),
-			async (c) => {
-				const { server, hostname, rrtype, useCache } = c.req.valid('json');
-
-				return this.getDotQuery(server, hostname, rrtype, c.req.raw.signal, useCache)
-					.then((result) => c.json(result, 200))
-					.catch((err) => c.text(err instanceof Error || err instanceof DOMException ? err.message : JSON.stringify(err), 500));
-			},
-		);
 
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
@@ -209,11 +157,15 @@ export class LocationTester extends DurableObject<EnvVars> {
 		}, 0);
 	}
 
-	override fetch(request: Request) {
-		return this.app.fetch(request, this.env, this.ctx as unknown as ExecutionContext);
+	public getDohQuery(server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
+		return Promise.race([
+			// Passthrough signal and carry over the rest
+			this._getDohQuery(signal, server, hostname, rrtype, useCache),
+			// Shortcircuit on abort
+			new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError', { cause: signal.reason instanceof Error ? signal.reason.cause : undefined })), { once: true })),
+		]);
 	}
-
-	public async getDohQuery(server: URL, hostname: string, rrtype: DNSRecordType, signal?: AbortSignal, useCache: boolean = true) {
+	private async _getDohQuery(signal: AbortSignal, server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true) {
 		server.searchParams.set('name', hostname);
 		server.searchParams.set('type', rrtype);
 
@@ -240,14 +192,15 @@ export class LocationTester extends DurableObject<EnvVars> {
 					// Re-assign response to make it mutable
 					response = new Response(cacheClone!.body, response);
 
-					const ttl = json.Answer.length > 0 ? Math.min(...json.Answer.map((a) => a.TTL)) : 0;
-					response.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
-
 					this.ctx.waitUntil(
-						CryptoHelpers.generateETag(response).then((etag) => {
-							response?.headers.set('ETag', etag);
-							return cache?.put(request, response!);
-						}),
+						(async () => {
+							const ttl = json.Answer.length > 0 ? Math.min(...json.Answer.map((a) => a.TTL)) : 0;
+							response.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
+
+							await CryptoHelpers.generateETag(response).then((etag) => response!.headers.set('ETag', etag));
+
+							return cache!.put(request, response);
+						})(),
 					);
 				}
 
@@ -263,7 +216,15 @@ export class LocationTester extends DurableObject<EnvVars> {
 		}
 	}
 
-	public async getDotQuery(server: URL, hostname: string, rrtype: DNSRecordType, signal?: AbortSignal, useCache: boolean = true) {
+	public getDotQuery(server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
+		return Promise.race([
+			// Passthrough signal and carry over the rest
+			this._getDotQuery(signal, server, hostname, rrtype, useCache),
+			// Shortcircuit on abort
+			new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError', { cause: signal.reason instanceof Error ? signal.reason.cause : undefined })), { once: true })),
+		]);
+	}
+	private async _getDotQuery(signal: AbortSignal, server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true) {
 		// CF Cache hard requires http or https protocol
 		server.protocol = 'https:';
 		server.searchParams.set('name', hostname);
@@ -285,10 +246,10 @@ export class LocationTester extends DurableObject<EnvVars> {
 			// eslint-disable-next-line prefer-const
 			let client: TLSSocket | undefined;
 			const onAbort = () => {
-				client?.destroy(new Error(signal?.reason instanceof DOMException ? signal.reason.message : signal?.reason instanceof Error ? signal.reason.message : signal?.reason ? JSON.stringify(signal.reason) : 'AbortError'));
-				reject(new Error(signal?.reason instanceof DOMException ? signal.reason.message : signal?.reason instanceof Error ? signal.reason.message : signal?.reason ? JSON.stringify(signal.reason) : 'AbortError'));
+				client?.destroy(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError'));
+				reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError'));
 			};
-			signal?.addEventListener('abort', onAbort, { once: true });
+			signal.addEventListener('abort', onAbort, { once: true });
 
 			let response = Buffer.from(new Uint8Array(0));
 			let expectedLength = 0;
@@ -363,7 +324,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 					);
 				}
 			});
-			client.once('end', () => signal?.removeEventListener('abort', onAbort));
+			client.once('end', () => signal.removeEventListener('abort', onAbort));
 		});
 
 		if (fakeResponse?.ok) {
@@ -374,15 +335,16 @@ export class LocationTester extends DurableObject<EnvVars> {
 					// Re-assign response to make it mutable
 					fakeResponse = new Response(cacheClone!.body, fakeResponse);
 
-					const answersWithTtl = json.answers.filter((a) => typeof a.ttl === 'number');
-					const ttl = answersWithTtl.length > 0 ? Math.min(...answersWithTtl.map((a) => a.ttl!)) : 0;
-					fakeResponse.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
-
 					this.ctx.waitUntil(
-						CryptoHelpers.generateETag(fakeResponse).then((etag) => {
-							fakeResponse?.headers.set('ETag', etag);
-							return cache?.put(fakeRequest, fakeResponse!);
-						}),
+						(async () => {
+							const answersWithTtl = json.answers.filter((a) => typeof a.ttl === 'number');
+							const ttl = answersWithTtl.length > 0 ? Math.min(...answersWithTtl.map((a) => a.ttl!)) : 0;
+							fakeResponse.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
+
+							await CryptoHelpers.generateETag(fakeResponse).then((etag) => fakeResponse!.headers.set('ETag', etag));
+
+							return cache!.put(fakeRequest, fakeResponse);
+						})(),
 					);
 				}
 
