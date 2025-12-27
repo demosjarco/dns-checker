@@ -14,7 +14,7 @@ function lower<T extends unknown = string>(x: AnySQLiteColumn) {
 export const locations = sqliteTable(
 	'locations',
 	(l) => ({
-		location: l.text({ mode: 'text' }).primaryKey().notNull().$type<DOLocations>(),
+		location: l.text({ mode: 'text' }).primaryKey().$type<DOLocations>(),
 		doh: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
 		dot: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
 	}),
@@ -22,7 +22,7 @@ export const locations = sqliteTable(
 );
 
 export const instances = sqliteTable('instances', (i) => ({
-	doId: i.blob({ mode: 'buffer' }).primaryKey().notNull(),
+	doId: i.blob({ mode: 'buffer' }).primaryKey(),
 	/**
 	 * @deprecated DO NOT USE (BufferHelpers is faster and cheaper)
 	 */
