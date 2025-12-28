@@ -1,7 +1,6 @@
-import { component$, noSerialize, Slot } from '@builder.io/qwik';
-import { routeLoader$, type RequestHandler } from '@builder.io/qwik-city';
-import { browserCachePolicy, drizzleDb, iataLocations } from '~/routes/extras';
-import * as schema from '~db/index';
+import { component$, Slot, useContextProvider, useStore } from '@builder.io/qwik';
+import type { RequestHandler } from '@builder.io/qwik-city';
+import { LocationsContext } from '~/context';
 
 export const onGet: RequestHandler = ({ cacheControl }) => {
 	// Control caching for this request for best performance and to reduce hosting costs:
@@ -14,31 +13,8 @@ export const onGet: RequestHandler = ({ cacheControl }) => {
 	});
 };
 
-export const useBrowserCachePolicy = routeLoader$(({ platform, request }) => browserCachePolicy(platform, request));
-
-export const useDrizzleRef = routeLoader$(async ({ platform, resolveValue }) => noSerialize(drizzleDb(platform, await resolveValue(useBrowserCachePolicy))));
-
-export const useLocationTesterInstances = routeLoader$(({ resolveValue }) =>
-	resolveValue(useDrizzleRef).then(async (db) =>
-		db!
-			.select({
-				doId: schema.instances.doId,
-				iata: schema.instances.iata,
-				location: schema.instances.location,
-			})
-			.from(schema.instances)
-			.then((rows) =>
-				rows.map((row) => ({
-					...row,
-					iata: row.iata.toUpperCase(),
-					doId: row.doId.toString('hex'),
-				})),
-			),
-	),
-);
-
-export const useIataLocations = routeLoader$(() => iataLocations);
-
 export default component$(() => {
+	useContextProvider(LocationsContext, useStore({}, { deep: true }));
+
 	return <Slot />;
 });

@@ -89,7 +89,6 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -149,10 +148,13 @@ stats.html
 # Cache
 .mf
 .rollup.cache
-dist
 /server
 *.tsbuildinfo
 
 # Cloudflare
 .wrangler
 .dev.vars
+dist/*
+!*openapi*.json
+!llms.txt
+!/dist/api
