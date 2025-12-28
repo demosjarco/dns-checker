@@ -1,4 +1,4 @@
-import { qwikCity, type QwikCityVitePluginOptions } from '@builder.io/qwik-city/vite';
+import { qwikCity } from '@builder.io/qwik-city/vite';
 import { qwikVite } from '@builder.io/qwik/optimizer';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import tailwindcss from '@tailwindcss/vite';
@@ -9,17 +9,6 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 const cloudflareNodeRuntimes: `node:${string}`[] = ['node:assert', 'node:async_hooks', 'node:buffer', 'node:crypto', 'node:diagnostics_channel', 'node:dns', 'node:events', 'node:net', 'node:path', 'node:process', 'node:stream', 'node:string_decoder', 'node:test', 'node:timers', 'node:url', 'node:util', 'node:zlib'];
 const cloudflareRuntimes: `cloudflare:${string}`[] = ['cloudflare:email', 'cloudflare:workers', 'cloudflare:sockets'];
 
-let platform: QwikCityVitePluginOptions['platform'] = {};
-const isLocal = process.env['GITHUB_ACTIONS'] !== 'true' && process.env['GIT_HASH'] === undefined;
-
-if (isLocal) {
-	await import('wrangler').then(({ getPlatformProxy }) =>
-		getPlatformProxy({ remoteBindings: true }).then((proxy) => {
-			platform = proxy;
-		}),
-	);
-}
-
 /**
  * Note that Vite normally starts from `index.html` but the qwikCity plugin makes start at `src/entry.ssr.tsx` instead.
  */
@@ -27,7 +16,7 @@ export default defineConfig((): UserConfig => {
 	return {
 		plugins: [
 			tailwindcss(),
-			qwikCity({ platform }),
+			qwikCity(),
 			qwikVite(),
 			tsconfigPaths(),
 			nodeResolve({
@@ -51,7 +40,6 @@ export default defineConfig((): UserConfig => {
 		build: {
 			target: 'esnext',
 			sourcemap: true,
-			emptyOutDir: true,
 			rollupOptions: {
 				external: [...cloudflareNodeRuntimes, ...cloudflareRuntimes],
 			},

@@ -1,10 +1,10 @@
-import { component$, noSerialize, useSignal, useStyles$, useVisibleTask$, type NoSerialize } from '@builder.io/qwik';
+import { $, component$, noSerialize, useContext, useSignal, useStyles$, useVisibleTask$, type NoSerialize, type QRL } from '@builder.io/qwik';
+import type { Marker } from 'leaflet';
 import { divIcon, LatLngBounds, Map as LeafletMap, marker, tileLayer } from 'leaflet';
-import { useIataLocations, useLocationTesterInstances } from '~/routes/layout';
-import type { InstanceData } from '~/types';
 
 // @ts-expect-error types don't cover css
 import leafletStyles from 'leaflet/dist/leaflet.css?inline';
+import { LocationsContext, type LocationsContextType } from '~/context';
 
 export const getBoundaryBox = (map: LeafletMap) => {
 	const northEast = map.getBounds().getNorthEast();
@@ -12,32 +12,32 @@ export const getBoundaryBox = (map: LeafletMap) => {
 	return `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
 };
 
+export const useDebouncer = <A extends unknown[], R>(fn: QRL<(...args: A) => R>, delay: number): QRL<(...args: A) => void> => {
+	const timeoutId = useSignal<number>();
+
+	return $((...args: A): void => {
+		window.clearTimeout(timeoutId.value);
+		timeoutId.value = window.setTimeout((): void => {
+			void fn(...args);
+		}, delay);
+	});
+};
+
 export default component$(() => {
 	const mapDiv = useSignal<HTMLDivElement>();
 	const mapRef = useSignal<NoSerialize<LeafletMap>>();
-	const instances = useLocationTesterInstances();
-	const iataLocations = useIataLocations();
 	const userHasZoomed = useSignal(false);
 	const isAutoFitting = useSignal(false);
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 	useStyles$(leafletStyles);
 
-	// eslint-disable-next-line @typescript-eslint/unbound-method, qwik/no-use-visible-task
-	useVisibleTask$(async ({ track, cleanup }) => {
+	// Setup map
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	useVisibleTask$(({ track, cleanup }) => {
 		track(() => mapDiv.value);
 
 		cleanup(() => mapRef.value?.remove());
-
-		function fitMapBounds(bounds: LatLngBounds) {
-			if (mapRef.value && !userHasZoomed.value) {
-				isAutoFitting.value = true;
-				mapRef.value.fitBounds(bounds, {
-					padding: [20, 20],
-					maxZoom: 19,
-				});
-			}
-		}
 
 		if (mapDiv.value) {
 			// Create map
@@ -64,64 +64,110 @@ export default component$(() => {
 			mapRef.value?.on('moveend', () => {
 				isAutoFitting.value = false;
 			});
+		}
+	});
 
-			if (instances.value.length > 0) {
-				// Group unique IATA codes (case-insensitive)
-				const uniqueIataCodes = Array.from(new Set((instances.value as InstanceData[]).map((instance) => instance.iata.toUpperCase())));
+	const locations = useContext(LocationsContext);
+	const debouncedLocations = useSignal<LocationsContextType>({});
+	const debounce = useDebouncer(
+		$((value: LocationsContextType) => (debouncedLocations.value = value)),
+		1000,
+	);
 
-				// Create markers and collect bounds
-				const bounds = new LatLngBounds([]);
-				let hasValidMarkers = false;
+	const markersRef = useSignal<NoSerialize<Marker[]>>();
 
-				uniqueIataCodes.forEach((iataCode) => {
-					const airportInfo = iataLocations.value[iataCode];
+	// Load markers immediately
+	useVisibleTask$(({ track }) => {
+		track(() => mapRef.value);
+		track(() => JSON.stringify(locations));
+		void debounce(locations);
 
-					if (airportInfo?.latitude_deg && airportInfo.longitude_deg) {
-						const lat = parseFloat(airportInfo.latitude_deg);
-						const lng = parseFloat(airportInfo.longitude_deg);
+		if (mapRef.value) {
+			// Clear old markers before drawing new ones
+			markersRef.value?.forEach((existingMarker) => existingMarker.remove());
+			markersRef.value = noSerialize([]);
 
-						if (!isNaN(lat) && !isNaN(lng)) {
-							// Create popup content
-							const popupContent = `<div key="popup-${iataCode}">
-								<div class="mb-2 text-lg font-bold">${iataCode}</div>
-								<div class="mb-1 text-sm">
-									<strong>Location:</strong> ${[airportInfo.municipality, airportInfo.iso_country].join(', ')}
-								</div>
-							</div>`;
+			const entries = Object.values(locations).flatMap((iatas) => Object.entries(iatas));
+			const seenIatas = new Set<string>();
 
-							// Create marker and popup using Leaflet
-							const mapMarker = marker([lat, lng], {
-								icon: divIcon({
-									html: `<div class="h-[14px] w-[32px] cursor-pointer bg-[url(/images/cf-pin.svg)] bg-contain bg-no-repeat"></div>`,
-									iconSize: [32, 14],
-									className: '',
-								}),
-							}).addTo(mapRef.value!);
-							mapMarker.bindPopup(popupContent);
+			entries.forEach(([iataCode, { latitude, longitude, municipality, country }]) => {
+				if (!latitude || !longitude) return;
+				const normalizedIata = iataCode.toUpperCase();
+				if (seenIatas.has(normalizedIata)) return;
+				seenIatas.add(normalizedIata);
 
-							bounds.extend([lat, lng]);
-							hasValidMarkers = true;
-						}
-					}
-				});
+				const lat = Number(latitude);
+				const lng = Number(longitude);
+				if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-				// Fit map to show all markers with some padding
-				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-				if (hasValidMarkers) {
-					fitMapBounds(bounds);
+				const popupContent = `<div key="popup-${normalizedIata}">
+					<div class="mb-2 text-lg font-bold">${normalizedIata}</div>
+					<div class="mb-1 text-sm">
+						<strong>Location:</strong> ${[municipality, country].filter(Boolean).join(', ')}
+					</div>
+				</div>`;
+
+				const mapMarker = marker([lat, lng], {
+					icon: divIcon({
+						html: '<div class="h-3.5 w-8 cursor-pointer bg-[url(/images/cf-pin.svg)] bg-contain bg-no-repeat"></div>',
+						iconSize: [32, 14],
+						className: '',
+					}),
+				}).addTo(mapRef.value!);
+
+				mapMarker.bindPopup(popupContent);
+
+				markersRef.value = noSerialize([...(markersRef.value ?? []), mapMarker]);
+			});
+		}
+	});
+
+	// Debounce map fitting
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	useVisibleTask$(({ track, cleanup }) => {
+		track(() => mapRef.value);
+		track(() => debouncedLocations.value);
+
+		if (mapRef.value && mapDiv.value) {
+			function fitMapBounds(bounds: LatLngBounds) {
+				if (mapRef.value && !userHasZoomed.value) {
+					isAutoFitting.value = true;
+					mapRef.value.fitBounds(bounds, {
+						padding: [20, 20],
+						maxZoom: 19,
+					});
 				}
-
-				// Observe map div size changes
-				const resizeObserver = new ResizeObserver(() => {
-					if (hasValidMarkers) fitMapBounds(bounds);
-				});
-
-				resizeObserver.observe(mapDiv.value);
-
-				cleanup(() => {
-					if (mapDiv.value) resizeObserver.unobserve(mapDiv.value);
-				});
 			}
+
+			const entries = Object.values(debouncedLocations.value).flatMap((iatas) => Object.entries(iatas));
+			const bounds = new LatLngBounds([]);
+			let hasValidMarkers = false;
+			const seenIatas = new Set<string>();
+
+			entries.forEach(([iataCode, { latitude, longitude }]) => {
+				if (!latitude || !longitude) return;
+				const normalizedIata = iataCode.toUpperCase();
+				if (seenIatas.has(normalizedIata)) return;
+				seenIatas.add(normalizedIata);
+
+				const lat = Number(latitude);
+				const lng = Number(longitude);
+				if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+				bounds.extend([lat, lng]);
+				hasValidMarkers = true;
+			});
+
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			if (hasValidMarkers) fitMapBounds(bounds);
+
+			const resizeObserver = new ResizeObserver(() => {
+				if (hasValidMarkers) fitMapBounds(bounds);
+			});
+
+			resizeObserver.observe(mapDiv.value);
+
+			cleanup(() => resizeObserver.disconnect());
 		}
 	});
 
