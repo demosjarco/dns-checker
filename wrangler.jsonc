@@ -20,8 +20,8 @@
 	},
 	"assets": {
 		"binding": "ASSET",
-		"directory": "./dist"
-		// "not_found_handling": "single-page-application"
+		"directory": "./dist",
+		"run_worker_first": false
 	},
 	"durable_objects": {
 		"bindings": [
@@ -45,6 +45,5 @@
 			"tag": "6de84bb",
 			"new_sqlite_classes": ["LocationTester"]
 		}
-	],
-	"version_metadata": { "binding": "CF_VERSION_METADATA" }
+	]
 }

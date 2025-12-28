@@ -146,7 +146,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 
 	public async nuke() {
 		// Delete from D1
-		await this.db.delete(schema.instances).where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
+		await this.db.delete(schema.instances).where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
 		// Alarm isn't deleted as part of `deleteAll()`
 		await this.ctx.storage.deleteAlarm();
 		await this.ctx.storage.deleteAll();
@@ -157,10 +157,10 @@ export class LocationTester extends DurableObject<EnvVars> {
 		}, 0);
 	}
 
-	public getDohQuery(server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
+	public getDohQuery(server: string, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
 		return Promise.race([
 			// Passthrough signal and carry over the rest
-			this._getDohQuery(signal, server, hostname, rrtype, useCache),
+			this._getDohQuery(signal, new URL(server), hostname, rrtype, useCache),
 			// Shortcircuit on abort
 			new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError', { cause: signal.reason instanceof Error ? signal.reason.cause : undefined })), { once: true })),
 		]);
@@ -216,10 +216,10 @@ export class LocationTester extends DurableObject<EnvVars> {
 		}
 	}
 
-	public getDotQuery(server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
+	public getDotQuery(server: string, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
 		return Promise.race([
 			// Passthrough signal and carry over the rest
-			this._getDotQuery(signal, server, hostname, rrtype, useCache),
+			this._getDotQuery(signal, new URL(server), hostname, rrtype, useCache),
 			// Shortcircuit on abort
 			new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError', { cause: signal.reason instanceof Error ? signal.reason.cause : undefined })), { once: true })),
 		]);
@@ -375,10 +375,10 @@ export class LocationTester extends DurableObject<EnvVars> {
 		// Self nuke if not recorded in D1 (prevent hanging DOs)
 		const [row] = await this.db
 			.select({
-				doId: schema.instances.doId,
+				do_id: schema.instances.do_id,
 			})
 			.from(schema.instances)
-			.where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
+			.where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
 			.limit(1);
 		if (!row) {
 			await this.nuke();

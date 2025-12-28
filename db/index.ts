@@ -22,17 +22,17 @@ export const locations = sqliteTable(
 );
 
 export const instances = sqliteTable('instances', (i) => ({
-	doId: i.blob({ mode: 'buffer' }).primaryKey(),
+	do_id: i.blob({ mode: 'buffer' }).primaryKey(),
 	/**
 	 * @deprecated DO NOT USE (BufferHelpers is faster and cheaper)
 	 */
-	doId_hex: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.doId}))`, { mode: 'virtual' }),
+	do_id_hex: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.do_id}))`, { mode: 'virtual' }),
 	location: i
 		.text({ mode: 'text' })
 		.notNull()
 		.$type<DOLocations>()
 		.references(() => locations.location, { onUpdate: 'cascade', onDelete: 'cascade' }),
-	iata: i.text({ mode: 'text' }).unique().notNull(),
+	iata: i.text({ mode: 'text' }).unique().notNull().$type<keyof typeof import('iata-location/data')>(),
 	iso_country: i.text({ mode: 'text' }).notNull(),
 	iso_region: i.text({ mode: 'text' }),
 }));
