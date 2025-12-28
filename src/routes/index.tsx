@@ -4,7 +4,6 @@ import * as zm from 'zod/mini';
 import InstanceTable from '~/components/instance-table';
 import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
-import { useGitHash, useWorkerMetadata } from '~/routes/layout';
 import { DNSRecordType } from '~/types';
 
 export const head: DocumentHead = {
@@ -16,6 +15,11 @@ export const head: DocumentHead = {
 		},
 	],
 };
+
+// eslint-disable-next-line qwik/loader-location
+const useGitHash = routeLoader$(({ platform }) => platform.env.GIT_HASH);
+// eslint-disable-next-line qwik/loader-location
+const useWorkerMetadata = routeLoader$(({ platform }) => platform.env.CF_VERSION_METADATA);
 
 export const useParamsCheck = routeLoader$(
 	({ url }) =>
