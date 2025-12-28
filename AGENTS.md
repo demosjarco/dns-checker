@@ -52,7 +52,7 @@
 
 ## Conventions & Risks
 
-- TS ESM (`type`="module"), path aliases `~` and `~db`. Keep loader data shapes aligned across InstanceTable and Map (uppercase IATA, hex `doId`).
+- TS ESM (`type`="module"), path aliases `~` and `~db`. Keep loader data shapes aligned across InstanceTable and Map (uppercase IATA, hex `do_id`).
 - CSP nonces available in `sharedMap`; ensure new assets/requests remain CSP-compliant (add domains if needed).
 - Request caps: DO spawn loop assumes ~900 usable requests/hr; avoid extra per-IATA calls. Nuking is the failure path; don’t leave DOs orphaned in D1.
 - Caching: layout sets `staleWhileRevalidate` 7d, `maxAge` 5s; Drizzle `SQLCache` keyed by D1 id—keep TTL in sync with env `SQL_TTL`.
