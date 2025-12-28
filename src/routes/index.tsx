@@ -1,9 +1,14 @@
-import { component$ } from '@builder.io/qwik';
-import { routeLoader$, type DocumentHead } from '@builder.io/qwik-city';
+import { component$, useContext, useVisibleTask$ } from '@builder.io/qwik';
+import { routeLoader$, useLocation, type DocumentHead } from '@builder.io/qwik-city';
 import * as zm from 'zod/mini';
+import type * as z4 from 'zod/v4';
+import type { output as regionOutput } from '~/api-routes/region/[code]/index.mjs';
+import type { output as instanceOutput } from '~/api-routes/region/[code]/instance/[iata]/index.mjs';
+import type { output as regionsOutput } from '~/api-routes/regions/index.mjs';
 import InstanceTable from '~/components/instance-table';
 import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
+import { LocationsContext } from '~/context';
 import { DNSRecordType } from '~/types';
 
 export const head: DocumentHead = {
@@ -15,11 +20,6 @@ export const head: DocumentHead = {
 		},
 	],
 };
-
-// eslint-disable-next-line qwik/loader-location
-const useGitHash = routeLoader$(({ platform }) => platform.env.GIT_HASH);
-// eslint-disable-next-line qwik/loader-location
-const useWorkerMetadata = routeLoader$(({ platform }) => platform.env.CF_VERSION_METADATA);
 
 export const useParamsCheck = routeLoader$(
 	({ url }) =>
@@ -34,8 +34,40 @@ export const useParamsCheck = routeLoader$(
 );
 
 export default component$(() => {
-	const gitHash = useGitHash();
-	const buildInfo = useWorkerMetadata();
+	const loc = useLocation();
+	const locations = useContext(LocationsContext);
+
+	useVisibleTask$(async ({ cleanup }) => {
+		const controller = new AbortController();
+		cleanup(() => controller.abort());
+
+		await fetch(new URL('api/regions', loc.url), { signal: controller.signal })
+			.then((response) => response.json<z4.output<typeof regionsOutput>>())
+			.then((json) =>
+				Promise.allSettled(
+					json.map(async (region) => {
+						locations[region] = {};
+
+						await fetch(new URL(`api/region/${region}`, loc.url), { signal: controller.signal })
+							.then((response) => response.json<z4.output<typeof regionOutput>>())
+							.then((iataList) =>
+								Promise.allSettled(
+									iataList.map(async (iata) => {
+										locations[region]![iata] = {};
+
+										await fetch(new URL(`api/region/${region}/instance/${iata}`, loc.url), { signal: controller.signal })
+											.then((response) => response.json<z4.output<typeof instanceOutput>>())
+											.then((instance) => {
+												//
+												locations[region]![iata] = instance;
+											});
+									}),
+								),
+							);
+					}),
+				),
+			);
+	});
 
 	return (
 		<div class="flex h-screen flex-col overflow-hidden bg-gradient-to-b from-[#FAAD3F] to-[#F48120] dark:from-[#5D52C0] dark:to-[#7F20DF]">
@@ -51,8 +83,8 @@ export default component$(() => {
 				</aside>
 			</main>
 			<footer class="flex-shrink-0 border-t border-black/12 bg-white/22 py-4 text-center text-sm text-black/80 dark:border-white/33 dark:bg-black/22 dark:text-white/80">
-				<a target="_blank" href={`https://github.com/demosjarco/dns-checker/commit/${gitHash.value ?? 'production'}`}>
-					Built: {buildInfo.value.timestamp ? <time dateTime={new Date(buildInfo.value.timestamp).toISOString()}>{new Date(buildInfo.value.timestamp).toLocaleString()}</time> : 'N/A'}
+				<a target="_blank" href={`https://github.com/demosjarco/dns-checker/commit/${(import.meta as ImportMeta & { env?: { PUBLIC_GIT_HASH?: string } }).env?.PUBLIC_GIT_HASH ?? 'main'}`}>
+					Source
 				</a>
 			</footer>
 		</div>

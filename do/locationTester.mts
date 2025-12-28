@@ -7,8 +7,7 @@ import { DefaultLogger } from 'drizzle-orm/logger';
 import { eq, sql } from 'drizzle-orm/sql';
 import { Buffer } from 'node:buffer';
 import { randomInt } from 'node:crypto';
-import { connect, type TLSSocket } from 'node:tls';
-import type { DNSJSON } from '~/types';
+import { connect } from 'node:tls';
 import { DNSRecordType, PROBE_DB_D1_ID, type EnvVars } from '~/types';
 import { DebugLogWriter } from '~db/extras';
 import * as schema from '~db/index';
@@ -146,7 +145,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 
 	public async nuke() {
 		// Delete from D1
-		await this.db.delete(schema.instances).where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
+		await this.db.delete(schema.instances).where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
 		// Alarm isn't deleted as part of `deleteAll()`
 		await this.ctx.storage.deleteAlarm();
 		await this.ctx.storage.deleteAll();
@@ -157,19 +156,22 @@ export class LocationTester extends DurableObject<EnvVars> {
 		}, 0);
 	}
 
-	public getDohQuery(server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
+	public getDnsQuery(server: string, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
 		return Promise.race([
 			// Passthrough signal and carry over the rest
-			this._getDohQuery(signal, server, hostname, rrtype, useCache),
+			this._getDnsQuery(signal, new URL(server), hostname, rrtype, useCache),
 			// Shortcircuit on abort
 			new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError', { cause: signal.reason instanceof Error ? signal.reason.cause : undefined })), { once: true })),
 		]);
 	}
-	private async _getDohQuery(signal: AbortSignal, server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true) {
-		server.searchParams.set('name', hostname);
-		server.searchParams.set('type', rrtype);
-
-		const request = new Request(server, {
+	private async _getDnsQuery(signal: AbortSignal, server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean) {
+		const cacheServerUrl = new URL(server);
+		// CF Cache hard requires http or https protocol
+		cacheServerUrl.protocol = 'https:';
+		// For cache niceness, follow `application/dns-json` format
+		cacheServerUrl.searchParams.set('name', hostname);
+		cacheServerUrl.searchParams.set('type', rrtype);
+		const cacheRequest = new Request(cacheServerUrl, {
 			headers: {
 				Accept: 'application/dns-json',
 			},
@@ -178,86 +180,14 @@ export class LocationTester extends DurableObject<EnvVars> {
 		const cache = useCache ? await caches.open(`dns:${await this._iata}`) : undefined;
 
 		// Try to get from cache first
-		let response = await cache?.match(request);
+		let response = await cache?.match(cacheRequest);
 		const fromCache = Boolean(response);
 
-		// Not in cache, fetch from origin
-		response ??= await fetch(request);
-
-		if (response.ok) {
-			const cacheClone = useCache ? response.clone() : undefined;
-
-			return response.json<DNSJSON>().then((json) => {
-				if (useCache && !fromCache) {
-					// Re-assign response to make it mutable
-					response = new Response(cacheClone!.body, response);
-
-					this.ctx.waitUntil(
-						(async () => {
-							const ttl = json.Answer.length > 0 ? Math.min(...json.Answer.map((a) => a.TTL)) : 0;
-							response.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
-
-							await CryptoHelpers.generateETag(response).then((etag) => response!.headers.set('ETag', etag));
-
-							return cache!.put(request, response);
-						})(),
-					);
-				}
-
-				switch (rrtype) {
-					case DNSRecordType['TXT (Text)']:
-						return json.Answer.map((a) => (Array.isArray(a.data) ? a.data : [a.data]));
-					default:
-						return json.Answer.map((a) => a.data);
-				}
-			});
-		} else {
-			throw new Error(`${response.status} ${response.statusText}`, { cause: await response.text() });
-		}
-	}
-
-	public getDotQuery(server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true, signal: AbortSignal = AbortSignal.timeout(10_000)) {
-		return Promise.race([
-			// Passthrough signal and carry over the rest
-			this._getDotQuery(signal, server, hostname, rrtype, useCache),
-			// Shortcircuit on abort
-			new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError', { cause: signal.reason instanceof Error ? signal.reason.cause : undefined })), { once: true })),
-		]);
-	}
-	private async _getDotQuery(signal: AbortSignal, server: URL, hostname: string, rrtype: DNSRecordType, useCache: boolean = true) {
-		// CF Cache hard requires http or https protocol
-		server.protocol = 'https:';
-		server.searchParams.set('name', hostname);
-		server.searchParams.set('type', rrtype);
-		const fakeRequest = new Request(server, {
-			headers: {
-				Accept: 'application/dns-json',
-			},
-			signal,
-		});
-		const cache = useCache ? await caches.open(`dns:${await this._iata}`) : undefined;
-
-		// Try to get from cache first
-		let fakeResponse = await cache?.match(fakeRequest);
-		const fromCache = Boolean(fakeResponse);
-
-		// Not in cache, fetch from origin
-		fakeResponse ??= await new Promise((resolve, reject) => {
-			// eslint-disable-next-line prefer-const
-			let client: TLSSocket | undefined;
-			const onAbort = () => {
-				client?.destroy(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError'));
-				reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError'));
-			};
-			signal.addEventListener('abort', onAbort, { once: true });
-
-			let response = Buffer.from(new Uint8Array(0));
-			let expectedLength = 0;
-
-			const dnsQueryBuf = dnsPacket.streamEncode({
+		response ??= await (() => {
+			const queryPacket: dnsPacket.Packet = {
 				type: 'query',
 				// [inclusive, exclusive)
-				id: randomInt(1, 65535),
+				id: randomInt(1, 65536),
 				flags: dnsPacket.RECURSION_DESIRED,
 				questions: [
 					{
@@ -265,85 +195,119 @@ export class LocationTester extends DurableObject<EnvVars> {
 						name: hostname,
 					},
 				],
-			});
+			};
 
-			client = connect({
-				minVersion: 'TLSv1.2',
-				maxVersion: 'TLSv1.3',
-				port: server.port === '' ? 853 : parseInt(server.port, 10),
-				host: server.hostname,
-				...(server.pathname !== '' && { path: server.pathname }),
-			});
+			if (server.protocol === 'https:') {
+				const dnsQueryBuf = dnsPacket.encode(queryPacket);
 
-			client.once('error', reject);
-			client.once('secureConnect', () => client.write(dnsQueryBuf));
-			client.on('data', (data: Buffer) => {
-				if (response.byteLength === 0) {
-					expectedLength = data.readUInt16BE(0);
-					if (expectedLength < 12) {
-						reject(new Error('Below DNS minimum packet length (DNS Header is 12 bytes)'));
-					}
-					response = Buffer.from(data);
-				} else {
-					response = Buffer.concat([response, data]);
-				}
+				return fetch(server, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/dns-message',
+						Accept: 'application/dns-message',
+					},
+					signal,
+					body: new Uint8Array(dnsQueryBuf),
+				})
+					.then((res) => res.arrayBuffer())
+					.then((buf) => dnsPacket.decode(Buffer.from(buf)));
+			} else if (server.protocol === 'tls:') {
+				const dnsQueryBuf = dnsPacket.streamEncode(queryPacket);
 
-				/**
-				 * @link https://tools.ietf.org/html/rfc7858#section-3.3
-				 * @link https://tools.ietf.org/html/rfc1035#section-4.2.2
-				 * The message is prefixed with a two byte length field which gives the message length, excluding the two byte length field.
-				 */
-				if (response.length === expectedLength + 2) {
-					client.destroy();
+				return new Promise<dnsPacket.Packet>((resolve, reject) => {
+					// Setup TLS client
+					const client = connect({
+						minVersion: 'TLSv1.2',
+						maxVersion: 'TLSv1.3',
+						port: server.port === '' ? 853 : parseInt(server.port, 10),
+						host: server.hostname,
+						...(server.pathname !== '' && { path: server.pathname }),
+					});
+					// Setup abort handling
+					const onAbort = () => {
+						client.destroy(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError'));
+						reject(new Error(signal.reason instanceof Error ? signal.reason.message : signal.reason ? JSON.stringify(signal.reason) : 'AbortError'));
+					};
+					signal.addEventListener('abort', onAbort, { once: true });
+					// Finish setting up client
+					client.once('error', reject);
+					client.once('secureConnect', () => client.write(dnsQueryBuf));
 
-					const packet = dnsPacket.streamDecode(response);
-					resolve(
-						new Response(
-							JSON.stringify({
-								...packet,
-								answers: (packet.answers ?? []).map((a) => {
-									if ('data' in a) {
-										if (Array.isArray(a.data)) {
-											return { ...a, data: a.data.map((part) => part.toString()) };
-										} else if (Buffer.isBuffer(a.data)) {
-											return { ...a, data: a.data.toString() };
-										} else if (typeof a.data === 'object') {
-											return { ...a, data: a.data };
-										} else {
-											return { ...a, data: a.data.toString() };
-										}
-									} else {
-										return a;
-									}
-								}),
-							}),
-							{
-								headers: { 'Content-Type': 'application/dns-json' },
-							},
-						),
-					);
-				}
-			});
-			client.once('end', () => signal.removeEventListener('abort', onAbort));
-		});
+					let response = Buffer.from(new Uint8Array(0));
+					let expectedLength = 0;
 
-		if (fakeResponse?.ok) {
-			const cacheClone = useCache ? fakeResponse.clone() : undefined;
+					client.on('data', (data: Buffer) => {
+						if (response.byteLength === 0) {
+							expectedLength = data.readUInt16BE(0);
+							if (expectedLength < 12) {
+								reject(new Error('Below DNS minimum packet length (DNS Header is 12 bytes)'));
+							}
+							response = Buffer.from(data);
+						} else {
+							response = Buffer.concat([response, data]);
+						}
 
-			return fakeResponse.json<BetterPacket>().then((json) => {
+						/**
+						 * @link https://tools.ietf.org/html/rfc7858#section-3.3
+						 * @link https://tools.ietf.org/html/rfc1035#section-4.2.2
+						 * The message is prefixed with a two byte length field which gives the message length, excluding the two byte length field.
+						 */
+						if (response.length === expectedLength + 2) {
+							client.destroy();
+
+							resolve(dnsPacket.streamDecode(response));
+						}
+					});
+					client.once('end', () => signal.removeEventListener('abort', onAbort));
+				});
+			} else {
+				throw new Error(`Unsupported protocol: ${server.protocol}`);
+			}
+		})().then(
+			(packet) =>
+				new Response(
+					JSON.stringify({
+						...packet,
+						answers: (packet.answers ?? []).map((a) => {
+							if ('data' in a) {
+								if (Array.isArray(a.data)) {
+									return { ...a, data: a.data.map((part) => part.toString()) };
+								} else if (Buffer.isBuffer(a.data)) {
+									return { ...a, data: a.data.toString() };
+								} else if (typeof a.data === 'object') {
+									return { ...a, data: a.data };
+								} else {
+									return { ...a, data: a.data.toString() };
+								}
+							} else {
+								return a;
+							}
+						}),
+					}),
+					// Go back to nice JSON format
+					{ headers: { 'Content-Type': 'application/dns-json' } },
+				),
+		);
+
+		if (response?.ok) {
+			const cacheClone = useCache ? response.clone() : undefined;
+
+			return response.json<BetterPacket>().then((json) => {
 				if (useCache && !fromCache) {
 					// Re-assign response to make it mutable
-					fakeResponse = new Response(cacheClone!.body, fakeResponse);
+					response = new Response(cacheClone!.body, response);
 
 					this.ctx.waitUntil(
 						(async () => {
 							const answersWithTtl = json.answers.filter((a) => typeof a.ttl === 'number');
 							const ttl = answersWithTtl.length > 0 ? Math.min(...answersWithTtl.map((a) => a.ttl!)) : 0;
-							fakeResponse.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
+							response.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
 
-							await CryptoHelpers.generateETag(fakeResponse).then((etag) => fakeResponse!.headers.set('ETag', etag));
+							await CryptoHelpers.generateETag(response)
+								.then((etag) => response!.headers.set('ETag', etag))
+								.catch((err) => console.warn('ETag generation failed', err));
 
-							return cache!.put(fakeRequest, fakeResponse);
+							return cache!.put(cacheRequest, response);
 						})(),
 					);
 				}
@@ -356,7 +320,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 				}
 			});
 		} else {
-			throw new Error(`${fakeResponse?.status} ${fakeResponse?.statusText}`, { cause: await fakeResponse?.text() });
+			throw new Error(`${response?.status} ${response?.statusText}`, { cause: await response?.text() });
 		}
 	}
 
@@ -375,10 +339,10 @@ export class LocationTester extends DurableObject<EnvVars> {
 		// Self nuke if not recorded in D1 (prevent hanging DOs)
 		const [row] = await this.db
 			.select({
-				doId: schema.instances.doId,
+				do_id: schema.instances.do_id,
 			})
 			.from(schema.instances)
-			.where(eq(schema.instances.doId, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
+			.where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
 			.limit(1);
 		if (!row) {
 			await this.nuke();

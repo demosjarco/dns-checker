@@ -50,5 +50,6 @@ export default tseslint.config({
 		'@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true, ignoreVoidOperator: true }],
 		'@typescript-eslint/only-throw-error': 'off',
 		'@typescript-eslint/no-misused-promises': 'off',
+		'qwik/no-use-visible-task': 'off',
 	},
 });
