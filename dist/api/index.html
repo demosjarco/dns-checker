@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+	<head>
+		<title>DemosJarco DNS API Reference</title>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="https://dns.demosjarco.dev/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+	</head>
+	<body>
+		<div id="app"></div>
+		<!-- Load the Scalar API Reference -->
+		<script type="module">
+			import { createApiReference } from 'https://cdn.jsdelivr.net/npm/@scalar/api-reference/esm.js';
+
+			createApiReference('#app', {
+				_integration: 'hono',
+				url: '/openapi31.json',
+				// theme: 'elysiajs',
+			});
+		</script>
+	</body>
+</html>
