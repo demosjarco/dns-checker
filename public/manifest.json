@@ -1,9 +1,9 @@
 {
 	"$schema": "https://json.schemastore.org/web-manifest-combined.json",
 	"name": "dns-checker",
-	"short_name": "Welcome to Qwik",
+	"short_name": "DNS Record Checker",
 	"start_url": ".",
 	"display": "standalone",
 	"background_color": "#fff",
-	"description": "A Qwik project app."
+	"description": "Check DNS records for any domain or subdomain"
 }
