@@ -1,6 +1,5 @@
 import { component$, useContext, useVisibleTask$ } from '@builder.io/qwik';
-import { routeLoader$, useLocation, type DocumentHead } from '@builder.io/qwik-city';
-import * as zm from 'zod/mini';
+import { useLocation, type DocumentHead } from '@builder.io/qwik-city';
 import type * as z4 from 'zod/v4';
 import type { output as regionOutput } from '~/api-routes/region/[code]/index.mjs';
 import type { output as instanceOutput } from '~/api-routes/region/[code]/instance/[iata]/index.mjs';
@@ -9,7 +8,6 @@ import InstanceTable from '~/components/instance-table';
 import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
 import { LocationsContext } from '~/context';
-import { DNSRecordType } from '~/types';
 
 export const head: DocumentHead = {
 	title: 'Welcome to Qwik',
@@ -20,18 +18,6 @@ export const head: DocumentHead = {
 		},
 	],
 };
-
-export const useParamsCheck = routeLoader$(
-	({ url }) =>
-		() =>
-			zm
-				.object({
-					domain: zm.catch(zm.optional(zm.string().check(zm.trim(), zm.regex(zm.regexes.domain))), undefined),
-					type: zm.catch(zm._default(zm.enum(DNSRecordType), DNSRecordType['A (IPv4 Address)']), DNSRecordType['A (IPv4 Address)']),
-					expected: zm.catch(zm.optional(zm.string().check(zm.trim())), undefined),
-				})
-				.parseAsync(Object.fromEntries(url.searchParams.entries())),
-);
 
 export default component$(() => {
 	const loc = useLocation();
