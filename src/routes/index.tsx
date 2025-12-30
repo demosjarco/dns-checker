@@ -1,7 +1,9 @@
-import { component$, useContext, useVisibleTask$ } from '@builder.io/qwik';
+import { component$, useContext, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import { useLocation, type DocumentHead } from '@builder.io/qwik-city';
+import type { DOLocations } from '@chainfuse/types';
 import type * as z4 from 'zod/v4';
 import type { output as regionOutput } from '~/api-routes/region/[code]/index.mjs';
+import type { output as dnsOutput } from '~/api-routes/region/[code]/instance/[iata]/dns/index.mjs';
 import type { output as instanceOutput } from '~/api-routes/region/[code]/instance/[iata]/index.mjs';
 import type { output as regionsOutput } from '~/api-routes/regions/index.mjs';
 import InstanceTable from '~/components/instance-table';
@@ -22,6 +24,7 @@ export const head: DocumentHead = {
 export default component$(() => {
 	const loc = useLocation();
 	const locations = useContext(LocationsContext);
+	const locationsLoaded = useSignal<boolean>(false);
 
 	useVisibleTask$(async ({ cleanup }) => {
 		const controller = new AbortController();
@@ -41,18 +44,57 @@ export default component$(() => {
 									iataList.map(async (iata) => {
 										locations[region]![iata] = {};
 
-										await fetch(new URL(`api/region/${region}/instance/${iata}`, loc.url), { signal: controller.signal })
-											.then((response) => response.json<z4.output<typeof instanceOutput>>())
-											.then((instance) => {
-												//
-												locations[region]![iata] = instance;
-											});
+										const windowUrl = new URL(window.location.href);
+
+										await Promise.allSettled([
+											fetch(new URL(`api/region/${region}/instance/${iata}`, loc.url), { signal: controller.signal })
+												.then((response) => response.json<z4.output<typeof instanceOutput>>())
+												.then((instance) => {
+													//
+													locations[region]![iata] = { ...locations[region]![iata], ...instance };
+												}),
+											...((windowUrl.searchParams.get('domain') ?? '').trim() !== ''
+												? [
+														fetch(new URL(`/api/region/${region}/instance/${iata}/dns/${windowUrl.searchParams.get('type')}/${encodeURIComponent(windowUrl.searchParams.get('domain')!)}`, loc.url), { signal: controller.signal })
+															.then((response) => response.json<z4.output<typeof dnsOutput>>())
+															.then((dns) => {
+																locations[region as DOLocations]![iata]!.dns = dns;
+															}),
+													]
+												: []),
+										]);
 									}),
 								),
 							);
 					}),
 				),
 			);
+
+		locationsLoaded.value = true;
+	});
+
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	useVisibleTask$(async ({ track, cleanup }) => {
+		const controller = new AbortController();
+		cleanup(() => controller.abort());
+
+		track(() => window.location.href);
+
+		const windowUrl = new URL(window.location.href);
+
+		if (locationsLoaded.value && (windowUrl.searchParams.get('domain') ?? '').trim() !== '') {
+			await Promise.allSettled(
+				Object.entries(locations).flatMap(([region, iatas]) =>
+					Object.keys(iatas).map((iata) =>
+						fetch(new URL(`/api/region/${region}/instance/${iata}/dns/${windowUrl.searchParams.get('type')}/${encodeURIComponent(windowUrl.searchParams.get('domain')!)}`, loc.url), { signal: controller.signal })
+							.then((response) => response.json<z4.output<typeof dnsOutput>>())
+							.then((dns) => {
+								locations[region as DOLocations]![iata as keyof typeof import('iata-location/data')]!.dns = dns;
+							}),
+					),
+				),
+			);
+		}
 	});
 
 	return (

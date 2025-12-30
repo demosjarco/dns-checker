@@ -5,6 +5,7 @@ import { divIcon, LatLngBounds, Map as LeafletMap, marker, tileLayer } from 'lea
 // @ts-expect-error types don't cover css
 import leafletStyles from 'leaflet/dist/leaflet.css?inline';
 import { LocationsContext, type LocationsContextType } from '~/context';
+import { describeAnswer } from '~/utils/dns';
 
 export const getBoundaryBox = (map: LeafletMap) => {
 	const northEast = map.getBounds().getNorthEast();
@@ -87,10 +88,11 @@ export default component$(() => {
 			markersRef.value?.forEach((existingMarker) => existingMarker.remove());
 			markersRef.value = noSerialize([]);
 
-			const entries = Object.values(locations).flatMap((iatas) => Object.entries(iatas));
+			const entries = Object.entries(locations).flatMap(([regionCode, iatas]) => Object.entries(iatas).map(([iataCode, details]) => ({ regionCode, iataCode, details })));
 			const seenIatas = new Set<string>();
 
-			entries.forEach(([iataCode, { latitude, longitude, municipality, country }]) => {
+			entries.forEach(({ iataCode, details, regionCode }) => {
+				const { latitude, longitude, municipality, country, dns } = details ?? {};
 				if (!latitude || !longitude) return;
 				const normalizedIata = iataCode.toUpperCase();
 				if (seenIatas.has(normalizedIata)) return;
@@ -100,11 +102,24 @@ export default component$(() => {
 				const lng = Number(longitude);
 				if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
+				const dnsEntries = dns ? Object.entries(dns) : [];
+
 				const popupContent = `<div key="popup-${normalizedIata}">
 					<div class="mb-2 text-lg font-bold">${normalizedIata}</div>
 					<div class="mb-1 text-sm">
-						<strong>Location:</strong> ${[municipality, country].filter(Boolean).join(', ')}
+						<strong>Location:</strong> ${[municipality, country].filter(Boolean).join(', ')} (${regionCode})
 					</div>
+					${
+						dnsEntries.length
+							? `<ul class="mt-2 space-y-1 text-sm">${dnsEntries
+									.map(
+										([resolver, payload]) => `<li>
+							<div class="font-mono text-[11px] text-gray-600">${resolver}</div><div class="text-gray-800">${describeAnswer(payload)}</div>
+						</li>`,
+									)
+									.join('')}</ul>`
+							: '<div class="mt-2 text-sm text-gray-600">No DNS results yet</div>'
+					}
 				</div>`;
 
 				const mapMarker = marker([lat, lng], {
