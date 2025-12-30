@@ -10,6 +10,9 @@ export default component$(() => {
 			<h1 class="mb-2 text-center text-2xl font-bold text-gray-800 dark:text-gray-100">DNS Record Checker</h1>
 			<p class="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
 				Check DNS records for any domain or subdomain{' '}
+				<a target="_blank" class="text-[#F48120] underline hover:text-[#FAAD3F] dark:text-[#5D52C0] dark:hover:text-[#7F20DF]" href="https://dns.demosjarco.dev/api/">
+					API
+				</a>{' '}
 				<a target="_blank" class="text-[#F48120] underline hover:text-[#FAAD3F] dark:text-[#5D52C0] dark:hover:text-[#7F20DF]" href={`https://github.com/demosjarco/dns-checker/commit/${(import.meta as ImportMeta & { env?: { PUBLIC_GIT_HASH?: string } }).env?.PUBLIC_GIT_HASH ?? 'main'}`}>
 					Source
 				</a>
