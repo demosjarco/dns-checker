@@ -10,7 +10,7 @@ INSERT INTO `global_servers` (`doh`, `dot`) VALUES
 	('https://cloudflare-dns.com/dns-query', NULL),
 	('https://security.cloudflare-dns.com/dns-query', NULL),
 	('https://dns.google/dns-query', 'tls://dns.google'),
-	('https://dns.quad9.net/dns-query', 'tls://dns.quad9.net'),
+	('https://dns11.quad9.net/dns-query', 'tls://dns11.quad9.net'),
 	('https://dns.adguard-dns.com/dns-query', 'tls://dns.adguard-dns.com'),
 	('https://wikimedia-dns.org/dns-query', 'tls://wikimedia-dns.org'),
 	('https://doh.opendns.com/dns-query', 'tls://dns.opendns.com');--> statement-breakpoint
