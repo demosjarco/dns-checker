@@ -11,11 +11,6 @@ updates:
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 999
-    ignore:
-      # Match lts/*
-      - dependency-name: 'node'
-        versions:
-          - '>=23'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
