@@ -12,11 +12,11 @@ import RecordSearch from '~/components/record-search';
 import { LocationsContext } from '~/context';
 
 export const head: DocumentHead = {
-	title: 'Welcome to Qwik',
+	title: 'DNS Record Checker',
 	meta: [
 		{
 			name: 'description',
-			content: 'Qwik site description',
+			content: 'Check DNS records for any domain or subdomain',
 		},
 	],
 };
