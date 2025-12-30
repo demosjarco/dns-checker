@@ -1,9 +1,20 @@
-import { component$ } from '@builder.io/qwik';
+import { component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
 import { DNSRecordType } from '~/types';
 
 export default component$(() => {
 	const loc = useLocation();
+	const windowUrl = useSignal(loc.url);
+
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	useVisibleTask$(({ track, cleanup }) => {
+		const controller = new AbortController();
+		cleanup(() => controller.abort());
+
+		track(() => window.location.href);
+
+		windowUrl.value = new URL(window.location.href);
+	});
 
 	return (
 		<div class="w-full bg-gray-50 px-8 py-6 shadow-2xl dark:bg-gray-950">
@@ -23,16 +34,16 @@ export default component$(() => {
 					<label for="domain" class="mb-2 text-sm font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-300">
 						Domain or Hostname
 					</label>
-					<input type="text" id="domain" name="domain" placeholder="example.com" required value={loc.url.searchParams.get('domain')} class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400" />
+					<input type="text" id="domain" name="domain" placeholder="example.com" required value={windowUrl.value.searchParams.get('domain')} class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400" />
 				</div>
 
 				<div class="flex min-w-52 flex-1 flex-col gap-2">
 					<label for="type" class="mb-2 text-sm font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-300">
 						DNS Record Type
 					</label>
-					<select id="type" name="type" value={loc.url.searchParams.get('type') ?? undefined} class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400">
+					<select id="type" name="type" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-400">
 						{Object.entries(DNSRecordType).map(([label, value]) => (
-							<option key={value} value={value} selected={value === loc.url.searchParams.get('type')}>
+							<option key={value} value={value} selected={value === windowUrl.value.searchParams.get('type')}>
 								{label}
 							</option>
 						))}
