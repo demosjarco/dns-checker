@@ -1,7 +1,9 @@
 # DemosJarco DNS API
 
 - **OpenAPI Version:** `3.1.0`
-- **API Version:** `Local`
+- **API Version:** `main`
+
+Check DNS records for any domain or subdomain
 
 ## Operations
 
