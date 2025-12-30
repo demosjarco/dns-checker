@@ -125,5 +125,5 @@ export default component$(() => {
 		}
 	});
 
-	return <div ref={mapDiv} class="h-full w-full"></div>;
+	return <div ref={mapDiv} class="filter:none h-full w-full dark:brightness-70 dark:contrast-300 dark:hue-rotate-200 dark:invert dark:saturate-30"></div>;
 });
