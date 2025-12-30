@@ -8,7 +8,12 @@ export default component$(() => {
 	return (
 		<div class="w-full bg-gray-50 px-8 py-6 shadow-2xl dark:bg-gray-950">
 			<h1 class="mb-2 text-center text-2xl font-bold text-gray-800 dark:text-gray-100">DNS Record Checker</h1>
-			<p class="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">Check DNS records for any domain or subdomain</p>
+			<p class="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+				Check DNS records for any domain or subdomain{' '}
+				<a target="_blank" class="text-[#F48120] underline hover:text-[#FAAD3F] dark:text-[#5D52C0] dark:hover:text-[#7F20DF]" href={`https://github.com/demosjarco/dns-checker/commit/${(import.meta as ImportMeta & { env?: { PUBLIC_GIT_HASH?: string } }).env?.PUBLIC_GIT_HASH ?? 'main'}`}>
+					Source
+				</a>
+			</p>
 
 			<form method="GET" class="flex flex-row flex-wrap items-end gap-4 md:flex-nowrap">
 				<div class="flex min-w-52 flex-1 flex-col gap-2">
