@@ -1,6 +1,7 @@
 import type { DOLocations } from '@chainfuse/types';
 import { drizzle } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
+import type { Context } from 'hono';
 import type iataData from 'iata-location/data';
 import type { Buffer } from 'node:buffer';
 import type { ContextVariables, EnvVars } from '~/types.js';
@@ -111,6 +112,14 @@ export default {
 				}),
 			);
 
+			if (c.req.raw.headers.has('X-Timestamp-S') && c.req.raw.headers.has('X-Timestamp-MS')) {
+				c.set('requestDate', new Date(parseInt(c.req.header('X-Timestamp-S')!, 10) * 1000 + parseInt(c.req.header('X-Timestamp-MS')!, 10)));
+			} else if (request.cf?.clientTcpRtt) {
+				c.set('requestDate', new Date(Date.now() - request.cf.clientTcpRtt));
+			} else {
+				c.set('requestDate', new Date());
+			}
+
 			await next();
 		});
 
@@ -143,45 +152,14 @@ export default {
 		app.use('*', (c, next) =>
 			Promise.all([import('hono/request-id'), import('uuid'), import('node:crypto')]).then(([{ requestId }, { v7: uuidv7 }, { randomBytes, createHash }]) =>
 				requestId({
-					generator: (c) => {
+					generator: (c: Context<{ Bindings: EnvVars; Variables: ContextVariables }>) => {
 						// Try and get ray id properly (<16 digit hex>-<colo IATA>)
 						let rawRayId = c.req.header('cf-ray');
 
 						// Fuck it, we make up our own
 						rawRayId ??= (() => {
 							// Use uuid7 for timestamp + globally random
-							const uuid = uuidv7({
-								random: randomBytes(16),
-								// Try and get actual date it came in
-								msecs: (() => {
-									/**
-									 * The timestamp when Cloudflare received the request, expressed as UNIX time in seconds
-									 * @link https://developers.cloudflare.com/ruleset-engine/rules-language/fields/reference/http.request.timestamp.sec
-									 */
-									const timestampSeconds = c.req.header('X-Timestamp-S');
-									/**
-									 * The millisecond when Cloudflare received the request, between 0–999
-									 * @link https://developers.cloudflare.com/ruleset-engine/rules-language/fields/reference/http.request.timestamp.msec
-									 */
-									const timestampMilliseconds = c.req.header('X-Timestamp-MS');
-
-									if (timestampSeconds && timestampMilliseconds) {
-										return new Date(parseInt(timestampSeconds, 10) * 1000 + parseInt(timestampMilliseconds, 10));
-									}
-
-									/**
-									 * Round trip time from client to colo
-									 * @link https://developers.cloudflare.com/logs/logpush/logpush-job/datasets/zone/spectrum_events/#clienttcprtt
-									 */
-									const clientTcpRtt = request.cf?.clientTcpRtt;
-
-									if (clientTcpRtt) {
-										return new Date(Date.now() - clientTcpRtt);
-									} else {
-										return new Date();
-									}
-								})().getTime(),
-							});
+							const uuid = uuidv7({ random: randomBytes(16), msecs: c.var.requestDate.getTime() });
 							const uuidHex = uuid.replaceAll('-', '');
 
 							// We don't use full raw value. We hash it
