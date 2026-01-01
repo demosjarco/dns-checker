@@ -29,6 +29,7 @@ export const PROBE_DB_D1_ID = 'c5bdb710-7b13-4b0f-8a55-2ccaaa94e48d' as const;
 export interface ContextVariables extends RequestIdVariables, TimingVariables {
 	browserCachePolicy: boolean;
 	db: DrizzleD1Database<typeof schema>;
+	requestDate: Date;
 }
 
 export enum DNSRecordType {
