@@ -144,7 +144,8 @@ export class LocationTester extends DurableObject<EnvVars> {
 		return this.ctx.storage.put('iata', iata);
 	}
 
-	public async nuke() {
+	public async nuke(reason?: string) {
+		if (reason) console.warn(reason);
 		// Delete from D1
 		await this.db.delete(schema.instances).where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
 		// Alarm isn't deleted as part of `deleteAll()`
@@ -333,7 +334,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 			if (storedIata === currentIata) {
 				console.debug('Verified', storedIata, "hasn't moved");
 			} else {
-				await this.nuke();
+				await this.nuke(`IATA drifted from ${storedIata} to ${currentIata}`);
 			}
 		});
 
@@ -346,7 +347,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 			.where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`))
 			.limit(1);
 		if (!row) {
-			await this.nuke();
+			await this.nuke('DO instance not found in D1');
 		}
 	}
 }
