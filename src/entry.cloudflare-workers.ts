@@ -4,6 +4,7 @@ import { DefaultLogger } from 'drizzle-orm/logger';
 import type { Context } from 'hono';
 import type iataData from 'iata-location/data';
 import type { Buffer } from 'node:buffer';
+import { randomInt } from 'node:crypto';
 import type { ContextVariables, EnvVars } from '~/types.js';
 import { DebugLogWriter } from '~db/extras';
 import * as schema from '~db/index';
@@ -347,6 +348,12 @@ export default {
 										// 1000 request max in workers (leave 100 aside for other operations) / 2 (half because each try has to make a network request)
 										const attempts = Math.round((1000 - 100) / 2 / iatasToCreate.length);
 										for (let i = 0; i < attempts; i++) {
+											/**
+											 * Jitter each attempt to avoid thundering herd
+											 * 1 hour (max cron duration) in ms / attempts / 2 (to give it some time to actually run)
+											 */
+											await new Promise((resolve) => setTimeout(resolve, randomInt((60 * 60 * 1000) / attempts / 2)));
+
 											console.debug(`Attempt ${i}:`, 'Attempting to spawn', iataToCreate, 'in', matchingRegion);
 
 											const do_id = env.LOCATION_TESTER.newUniqueId();
