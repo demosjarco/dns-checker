@@ -30,16 +30,19 @@ export default component$(() => {
 		const controller = new AbortController();
 		cleanup(() => controller.abort());
 
-		await fetch(new URL('api/regions', loc.url), { signal: controller.signal })
-			.then((response) => response.json<z4.output<typeof regionsOutput>>())
-			.then((json) =>
+		await fetch(new URL('api/regions', loc.url), { signal: controller.signal }).then((regionsResponse) =>
+			regionsResponse.json<z4.output<typeof regionsOutput>>().then((regionsJson) =>
 				Promise.allSettled(
-					json.map(async (region) => {
+					regionsJson.map(async (region) => {
 						locations[region] = {};
 
-						await fetch(new URL(`api/region/${region}`, loc.url), { signal: controller.signal })
-							.then((response) => response.json<z4.output<typeof regionOutput>>())
-							.then((iataList) =>
+						await fetch(new URL(`api/region/${region}`, loc.url), {
+							signal: controller.signal,
+							headers: {
+								...(regionsResponse.headers.has('X-D1-Bookmark') && { 'X-D1-Bookmark': regionsResponse.headers.get('X-D1-Bookmark')! }),
+							},
+						}).then((iataListResponse) =>
+							iataListResponse.json<z4.output<typeof regionOutput>>().then((iataList) =>
 								Promise.allSettled(
 									iataList.map(async (iata) => {
 										locations[region]![iata] = {};
@@ -47,15 +50,25 @@ export default component$(() => {
 										const windowUrl = new URL(window.location.href);
 
 										await Promise.allSettled([
-											fetch(new URL(`api/region/${region}/instance/${iata}`, loc.url), { signal: controller.signal })
-												.then((response) => response.json<z4.output<typeof instanceOutput>>())
+											fetch(new URL(`api/region/${region}/instance/${iata}`, loc.url), {
+												signal: controller.signal,
+												headers: {
+													...(iataListResponse.headers.has('X-D1-Bookmark') && { 'X-D1-Bookmark': iataListResponse.headers.get('X-D1-Bookmark')! }),
+												},
+											})
+												.then((instanceResponse) => instanceResponse.json<z4.output<typeof instanceOutput>>())
 												.then((instance) => {
 													//
 													locations[region]![iata] = { ...locations[region]![iata], ...instance };
 												}),
 											...((windowUrl.searchParams.get('domain') ?? '').trim() !== ''
 												? [
-														fetch(new URL(`/api/region/${region}/instance/${iata}/dns/${windowUrl.searchParams.get('type')}/${encodeURIComponent(windowUrl.searchParams.get('domain')!)}`, loc.url), { signal: controller.signal })
+														fetch(new URL(`/api/region/${region}/instance/${iata}/dns/${windowUrl.searchParams.get('type')}/${encodeURIComponent(windowUrl.searchParams.get('domain')!)}`, loc.url), {
+															signal: controller.signal,
+															headers: {
+																...(iataListResponse.headers.has('X-D1-Bookmark') && { 'X-D1-Bookmark': iataListResponse.headers.get('X-D1-Bookmark')! }),
+															},
+														})
 															.then((response) => response.json<z4.output<typeof dnsOutput>>())
 															.then((dns) => {
 																locations[region as DOLocations]![iata]!.dns = dns;
@@ -65,10 +78,12 @@ export default component$(() => {
 										]);
 									}),
 								),
-							);
+							),
+						);
 					}),
 				),
-			);
+			),
+		);
 
 		locationsLoaded.value = true;
 	});
