@@ -54,15 +54,16 @@ export class LocationTester extends DurableObject<EnvVars> {
 		ctx.waitUntil(
 			this.ctx.storage.getAlarm().then(async (alarm) => {
 				if (!alarm) {
-					await this.ctx.storage.setAlarm(this.getNextTopOfHour());
+					await this.ctx.storage.setAlarm(this.getNextHour());
 				}
 			}),
 		);
 	}
 
-	private getNextTopOfHour(base: Date = new Date()) {
+	private getNextHour(base: Date = new Date()) {
 		const next = new Date(base);
-		next.setUTCMinutes(0, 0, 0);
+		// Jitter within the hour but leave ~5 minutes before the boundary
+		next.setUTCMinutes(randomInt(0, 55), randomInt(0, 60), randomInt(0, 1000));
 		next.setUTCHours(next.getUTCHours() + 1);
 		return next;
 	}
@@ -325,7 +326,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	override async alarm() {
-		this.ctx.waitUntil(this.ctx.storage.setAlarm(this.getNextTopOfHour()));
+		this.ctx.waitUntil(this.ctx.storage.setAlarm(this.getNextHour()));
 
 		// Self nuke if no longer in original location
 		await Promise.all([this.ctx.storage.get<string>('iata'), this.iata]).then(async ([storedIata, currentIata]) => {
