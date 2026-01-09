@@ -93,9 +93,11 @@ export default {
 			const antiCacheHeader = cacheControl.has('no-store') || cacheControl.has('no-cache') || cacheControl.has('max-age=0');
 			c.set('browserCachePolicy', !antiCacheHeader);
 
+			c.set('dbSession', c.env.PROBE_DB.withSession(c.req.header('X-D1-Bookmark') ?? 'first-unconstrained'));
+
 			c.set(
 				'db',
-				drizzle(c.env.PROBE_DB.withSession() as unknown as D1Database, {
+				drizzle(c.var.dbSession as unknown as D1Database, {
 					schema,
 					casing: 'snake_case',
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
@@ -122,6 +124,9 @@ export default {
 			}
 
 			await next();
+
+			const d1bookmark = c.var.dbSession.getBookmark();
+			if (d1bookmark) c.header('X-D1-Bookmark', d1bookmark);
 		});
 
 		// Security
