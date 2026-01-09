@@ -272,7 +272,7 @@ export default {
 							instancesToDelete.map(async (instanceToDelete) => {
 								const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(instanceToDelete.do_id), { locationHint: instanceToDelete.location });
 
-								await stub.nuke();
+								await stub.nuke(`Deleting stale iata ${instanceToDelete.iata}`);
 							}),
 						),
 					);
@@ -378,12 +378,12 @@ export default {
 													await doStub.lockIn(iataToCreate);
 												} catch (error) {
 													// Something D1 failed, nuke the colo
-													ctx.waitUntil(doStub.nuke());
+													ctx.waitUntil(doStub.nuke(`Failed to lock in ${iataToCreate}`));
 												}
 											} else {
 												console.debug(`Attempt ${i}:`, `Failed to make ${iataToCreate},`, attempts - i - 1, 'retries left');
 												// Didn't spawn where we wanted, nuke it
-												ctx.waitUntil(doStub.nuke());
+												ctx.waitUntil(doStub.nuke(`Failed to spawn in ${iataToCreate}`));
 											}
 										}
 
