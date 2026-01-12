@@ -154,7 +154,11 @@ export class LocationTester extends DurableObject<EnvVars> {
 		// To ensure that the DO is fully evicted, this.ctx.abort() is called
 		// `ctx.abort` throws an uncatchable error, so we yield to the event loop to avoid capturing it and let handlers finish cleaning up
 		setTimeout(() => {
-			this.ctx.abort('nuked');
+			try {
+				this.ctx.abort('nuked');
+			} catch (error) {
+				// Do nothing
+			}
 		}, 0);
 	}
 
