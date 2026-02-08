@@ -43,7 +43,7 @@
 	},
 	"engines-annotation": "Mostly required by sharp which needs a Node-API v9 compatible runtime",
 	"dependencies": {
-		"@chainfuse/helpers": "^4.2.9",
+		"@chainfuse/helpers": "^4.4.0",
 		"@chainfuse/types": "^4.2.3",
 		"@hono/zod-openapi": "^1.2.0",
 		"@types/dns-packet": "^5.6.5",
