@@ -53,7 +53,7 @@
 		"hono": "^4.11.3",
 		"iata-location": "^1.0.1",
 		"leaflet": "^1.9.4",
-		"uuid": "^13.0.0",
+		"uuid": "^14.0.0",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
