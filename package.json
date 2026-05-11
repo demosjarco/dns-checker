@@ -45,7 +45,7 @@
 	"dependencies": {
 		"@chainfuse/helpers": "^4.2.9",
 		"@chainfuse/types": "^4.2.3",
-		"@hono/zod-openapi": "^1.2.0",
+		"@hono/zod-openapi": "^1.4.0",
 		"@types/dns-packet": "^5.6.5",
 		"cloudflare": "^5.2.0",
 		"dns-packet": "^5.6.1",
