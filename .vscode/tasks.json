@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"label": "Build",
-			"dependsOn": ["Qwik Types", "Qwik Client", "Qwik Server"],
+			"dependsOn": ["Qwik Types", "Qwik Client", "Qwik Server", "API Static"],
 			"group": {
 				"kind": "build",
 				"isDefault": true
@@ -40,6 +40,18 @@
 			"dependsOn": ["Qwik Client"],
 			"type": "npm",
 			"script": "build.server",
+			"presentation": {
+				"group": "qwik.compile"
+			},
+			"icon": {
+				"id": "server-process"
+			}
+		},
+		{
+			"label": "API Static",
+			"dependsOn": ["Qwik Types", "Qwik Client", "Qwik Server"],
+			"type": "npm",
+			"script": "build:static",
 			"presentation": {
 				"group": "qwik.compile"
 			},
