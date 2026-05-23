@@ -147,8 +147,6 @@ export class LocationTester extends DurableObject<EnvVars> {
 		if (reason) console.warn(reason);
 		// Delete from D1
 		await this.db.delete(schema.instances).where(eq(schema.instances.do_id, sql<Buffer>`unhex(${this.ctx.id.toString()})`));
-		// Alarm isn't deleted as part of `deleteAll()`
-		await this.ctx.storage.deleteAlarm();
 		await this.ctx.storage.deleteAll();
 		// To ensure that the DO is fully evicted, this.ctx.abort() is called
 		// `ctx.abort` throws an uncatchable error, so we yield to the event loop to avoid capturing it and let handlers finish cleaning up
