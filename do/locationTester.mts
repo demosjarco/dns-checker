@@ -1,14 +1,13 @@
-import { CryptoHelpers } from '@chainfuse/helpers/crypto';
-import { SQLCache } from '@chainfuse/helpers/db';
 import { DurableObject } from 'cloudflare:workers';
 import * as dnsPacket from 'dns-packet';
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
 import { eq, sql } from 'drizzle-orm/sql';
 import { Buffer } from 'node:buffer';
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { connect } from 'node:tls';
 import { DNSRecordType, PROBE_DB_D1_ID, type EnvVars } from '~/types';
+import { SQLCache } from '~/utils/sqlCache';
 import { DebugLogWriter } from '~db/extras';
 import * as schema from '~db/index';
 
@@ -44,7 +43,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
 
-		this.db = drizzle(this.env.PROBE_DB.withSession() as unknown as D1Database, {
+		this.db = drizzle(this.env.PROBE_DB.withSession(), {
 			schema,
 			logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 			casing: 'snake_case',
@@ -309,9 +308,34 @@ export class LocationTester extends DurableObject<EnvVars> {
 							const ttl = answersWithTtl.length > 0 ? Math.min(...answersWithTtl.map((a) => a.ttl!)) : 0;
 							response.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl}`);
 
-							await CryptoHelpers.generateETag(response)
-								.then((etag) => response!.headers.set('ETag', etag))
-								.catch((err) => console.warn('ETag generation failed', err));
+							// We don't want to consume the body
+							const cacheResponseClonedBody = response.clone().body;
+							if (cacheResponseClonedBody) {
+								await (async () => {
+									const hash = createHash('sha512');
+
+									async function* streamAsyncIterable(stream: ReadableStream<Uint8Array>) {
+										const reader = stream.getReader();
+										try {
+											// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+											while (true) {
+												const { done, value } = await reader.read();
+												if (done) return;
+												yield value;
+											}
+										} finally {
+											reader.releaseLock();
+										}
+									}
+
+									for await (const chunk of streamAsyncIterable(cacheResponseClonedBody)) {
+										hash.update(chunk);
+									}
+									return `"${hash.digest('hex')}"`;
+								})()
+									.then((etag) => response!.headers.set('ETag', etag))
+									.catch((err) => console.warn('ETag generation failed', err));
+							}
 
 							return cache!.put(cacheRequest, response);
 						})(),
