@@ -51,7 +51,7 @@ export default component$(() => {
 
 			tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
-				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+				attribution: '&copy; <a rel="noopener" referrerPolicy="strict-origin-when-cross-origin" href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 				detectRetina: true,
 				referrerPolicy: 'strict-origin',
 			}).addTo(mapRef.value!);
