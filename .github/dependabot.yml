@@ -78,6 +78,11 @@ updates:
       db:
         patterns:
           - 'drizzle-*'
+      hono:
+        patterns:
+          - 'hono'
+          - '@hono/*'
+          - '@scalar/hono-api-reference'
       qwik:
         patterns:
           - '@builder.io/qwik'
