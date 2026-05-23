@@ -102,7 +102,7 @@ export default {
 					casing: 'snake_case',
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 					cache: c.var.browserCachePolicy
-						? await import('@chainfuse/helpers/db').then(
+						? await import('~/utils/sqlCache').then(
 								async ({ SQLCache }) =>
 									new SQLCache({
 										dbName: await import('~/types.js').then(({ PROBE_DB_D1_ID }) => PROBE_DB_D1_ID),
@@ -206,11 +206,11 @@ export default {
 	},
 	scheduled: (event, env, ctx) =>
 		Promise.all([import('@chainfuse/types'), import('drizzle-orm/sql')]).then(async ([{ DOLocations }, { sql }]) => {
-			const db = drizzle(env.PROBE_DB.withSession() as unknown as D1Database, {
+			const db = drizzle(env.PROBE_DB.withSession(), {
 				schema,
 				casing: 'snake_case',
 				logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-				cache: await import('@chainfuse/helpers/db').then(
+				cache: await import('~/utils/sqlCache').then(
 					async ({ SQLCache }) =>
 						new SQLCache({
 							dbName: await import('~/types.js').then(({ PROBE_DB_D1_ID }) => PROBE_DB_D1_ID),
