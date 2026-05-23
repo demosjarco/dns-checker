@@ -1,6 +1,5 @@
 import { component$, useContext, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import { useLocation, type DocumentHead } from '@builder.io/qwik-city';
-import type { DOLocations } from '@chainfuse/types';
 import type * as z4 from 'zod/v4';
 import type { output as regionOutput } from '~/api-routes/region/[code]/index.mjs';
 import type { output as dnsOutput } from '~/api-routes/region/[code]/instance/[iata]/dns/index.mjs';
@@ -10,6 +9,7 @@ import InstanceTable from '~/components/instance-table';
 import Map from '~/components/map';
 import RecordSearch from '~/components/record-search';
 import { LocationsContext } from '~/context';
+import type { DOLocations } from '~/types';
 
 export const head: DocumentHead = {
 	title: 'DNS Record Checker',
