@@ -4,13 +4,9 @@ import type { RequestIdVariables } from 'hono/request-id';
 import type { TimingVariables } from 'hono/timing';
 import type * as schema from '~db/index';
 
-export interface EnvVars extends Secrets, Cloudflare.Env {
+export interface EnvVars extends Cloudflare.Env {
 	GIT_HASH?: string;
 	CF_ACCOUNT_ID: string;
-}
-
-interface Secrets {
-	CF_API_TOKEN: string;
 }
 
 export interface InstanceData {
