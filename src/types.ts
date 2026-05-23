@@ -3,19 +3,14 @@ import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import type { RequestIdVariables } from 'hono/request-id';
 import type { TimingVariables } from 'hono/timing';
 import type * as schema from '~db/index';
-import type { LocationTester } from '~do/locationTester.mjs';
 
-export interface EnvVars extends Secrets, Omit<Cloudflare.Env, 'LOCATION_TESTER'>, TypedBindings {
+export interface EnvVars extends Secrets, Cloudflare.Env {
 	GIT_HASH?: string;
 	CF_ACCOUNT_ID: string;
 }
 
 interface Secrets {
 	CF_API_TOKEN: string;
-}
-
-interface TypedBindings {
-	LOCATION_TESTER: DurableObjectNamespace<LocationTester>;
 }
 
 export interface InstanceData {
