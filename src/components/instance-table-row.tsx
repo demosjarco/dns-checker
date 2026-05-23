@@ -1,7 +1,7 @@
 import { component$, useContext } from '@builder.io/qwik';
-import type { DOLocations } from '@chainfuse/types';
 import type iataData from 'iata-location/data';
 import { LocationsContext } from '~/context';
+import type { DOLocations } from '~/types';
 import { describeAnswer, getFirstResolverEntry } from '~/utils/dns';
 
 export default component$<{ region: DOLocations; iata: keyof typeof iataData }>(({ region, iata }) => {
