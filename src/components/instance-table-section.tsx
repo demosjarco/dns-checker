@@ -1,8 +1,8 @@
 import { component$, useContext } from '@builder.io/qwik';
-import type { DOLocations } from '@chainfuse/types';
 import type iataData from 'iata-location/data';
 import InstanceTableRow from '~/components/instance-table-row';
 import { LocationsContext } from '~/context';
+import type { DOLocations } from '~/types';
 
 export default component$<{ region: DOLocations }>(({ region }) => {
 	const locations = useContext(LocationsContext);
