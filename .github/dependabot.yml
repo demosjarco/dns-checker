@@ -40,6 +40,9 @@ updates:
       interval: 'weekly'
     versioning-strategy: increase
     open-pull-requests-limit: 999
+    cooldown:
+      default-days: 1
+      semver-major-days: 30
     groups:
       cloudflare:
         patterns:
