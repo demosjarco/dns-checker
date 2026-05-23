@@ -1,10 +1,10 @@
-import type { DOLocations } from '@chainfuse/types';
 import { drizzle } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
 import type { Context } from 'hono';
 import type iataData from 'iata-location/data';
 import type { Buffer } from 'node:buffer';
 import { randomInt } from 'node:crypto';
+import type { DOLocations } from '~/types';
 import type { ContextVariables, EnvVars } from '~/types.js';
 import { DebugLogWriter } from '~db/extras';
 import * as schema from '~db/index';
@@ -205,7 +205,7 @@ export default {
 		return app.fetch(request, env, ctx);
 	},
 	scheduled: (event, env, ctx) =>
-		Promise.all([import('@chainfuse/types'), import('drizzle-orm/sql')]).then(async ([{ DOLocations }, { sql }]) => {
+		Promise.all([import('~/types.js'), import('drizzle-orm/sql')]).then(async ([{ DOLocations }, { sql }]) => {
 			const db = drizzle(env.PROBE_DB.withSession() as unknown as D1Database, {
 				schema,
 				casing: 'snake_case',

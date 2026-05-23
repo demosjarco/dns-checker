@@ -1,7 +1,7 @@
 import { component$, useContext } from '@builder.io/qwik';
-import type { DOLocations } from '@chainfuse/types';
 import InstanceTableSection from '~/components/instance-table-section';
 import { LocationsContext } from '~/context';
+import type { DOLocations } from '~/types';
 
 export default component$(() => {
 	const locations = useContext(LocationsContext);

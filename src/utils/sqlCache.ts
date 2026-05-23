@@ -1,10 +1,18 @@
-import type { CacheStorageLike } from '@chainfuse/types';
 import { Cache as DrizzleCache, type MutationOption } from 'drizzle-orm/cache/core';
 import type { CacheConfig } from 'drizzle-orm/cache/core/types';
 import { is } from 'drizzle-orm/entity';
 import { getTableName, Table } from 'drizzle-orm/table';
 import type { Channel } from 'node:diagnostics_channel';
 import * as zm from 'zod/mini';
+
+/**
+ * Interface for CacheStorage-like objects that can be used as drop-in replacements.
+ * This interface ensures compatibility with the Web API CacheStorage while allowing for custom implementations that provide the same core functionality.
+ */
+export interface CacheStorageLike {
+	/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/CacheStorage/open) */
+	open(cacheName: string): Promise<Cache>;
+}
 
 /**
  * SQLCache is a cache implementation for SQL query results, using Web CacheStorage (supports drop in replacements).

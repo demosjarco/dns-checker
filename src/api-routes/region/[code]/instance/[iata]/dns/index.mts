@@ -1,8 +1,7 @@
-import { DOLocations } from '@chainfuse/types';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { and, eq } from 'drizzle-orm/sql';
 import { endTime, startTime, wrapTime } from 'hono/timing';
-import { DNSRecordType, type ContextVariables, type EnvVars } from '~/types';
+import { DNSRecordType, DOLocations, type ContextVariables, type EnvVars } from '~/types';
 import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();

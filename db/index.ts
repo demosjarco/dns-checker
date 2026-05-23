@@ -1,6 +1,6 @@
-import type { DOLocations } from '@chainfuse/types';
 import { isNotNull, or, sql, type SQL } from 'drizzle-orm/sql';
 import { check, sqliteTable, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import type { DOLocations } from '~/types';
 
 /**
  * @returns a copy of string `x` with all ASCII characters converted to lower case

@@ -1,4 +1,3 @@
-import type { DOLocations } from '@chainfuse/types';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import type { RequestIdVariables } from 'hono/request-id';
 import type { TimingVariables } from 'hono/timing';
@@ -22,6 +21,21 @@ export interface ContextVariables extends RequestIdVariables, TimingVariables {
 	dbSession: D1DatabaseSession;
 	db: DrizzleD1Database<typeof schema>;
 	requestDate: Date;
+}
+
+/**
+ * @link https://developers.cloudflare.com/durable-objects/reference/data-location/#provide-a-location-hint
+ */
+export enum DOLocations {
+	'Western North America' = 'wnam',
+	'Eastern North America' = 'enam',
+	'South America' = 'sam',
+	'Western Europe' = 'weur',
+	'Eastern Europe' = 'eeur',
+	'Asia-Pacific' = 'apac',
+	'Oceania' = 'oc',
+	'Africa' = 'afr',
+	'Middle East' = 'me',
 }
 
 export enum DNSRecordType {
