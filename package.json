@@ -67,7 +67,7 @@
 		"@types/leaflet": "^1.9.21",
 		"@types/node": "25.9.1",
 		"drizzle-kit": "^0.31.10",
-		"eslint": "^10.3.0",
+		"eslint": "10.4.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-qwik": "^1.19.2",
 		"flowbite": "^4.0.1",
@@ -77,7 +77,7 @@
 		"tsx": "4.22.3",
 		"turnstile-types": "^1.2.3",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.59.3",
+		"typescript-eslint": "8.59.4",
 		"vite-tsconfig-paths": "^6.1.1",
 		"wrangler": "^4.56.0",
 		"zaraz-ts": "^1.2.0"
