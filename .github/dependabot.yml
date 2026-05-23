@@ -69,6 +69,8 @@ updates:
           - 'eslint-plugin-*'
           - 'eslint-config-*'
           - 'typescript-eslint'
+        exclude-patterns:
+          - 'eslint-plugin-qwik'
       design:
         patterns:
           - '@tailwindcss/*'
@@ -78,10 +80,17 @@ updates:
       db:
         patterns:
           - 'drizzle-*'
+      hono:
+        patterns:
+          - 'hono'
+          - '@hono/*'
+          - '@scalar/hono-api-reference'
+          - '@scalar/openapi-to-markdown'
       qwik:
         patterns:
           - '@builder.io/qwik'
           - '@builder.io/qwik*'
+          - 'eslint-plugin-qwik'
           - 'vite-*'
           - '@rollup/plugin-*'
           - 'rollup-plugin-*'
