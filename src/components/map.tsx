@@ -46,13 +46,13 @@ export default component$(() => {
 				new LeafletMap(mapDiv.value, {
 					center: [0, 0], // Default center, will be adjusted
 					zoom: 2, // Default zoom, will be adjusted
-					preferCanvas: true,
 				}),
 			);
 
 			tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 19,
 				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+				detectRetina: true,
 				referrerPolicy: 'strict-origin',
 			}).addTo(mapRef.value!);
 
