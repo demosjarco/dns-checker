@@ -1,8 +1,10 @@
 import { component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
+import { useGitHash } from '~/routes/layout';
 import { DNSRecordType } from '~/types';
 
 export default component$(() => {
+	const gitHash = useGitHash();
 	const loc = useLocation();
 	const windowUrl = useSignal(loc.url);
 
@@ -24,7 +26,7 @@ export default component$(() => {
 				<a target="_blank" class="text-[#F48120] underline hover:text-[#FAAD3F] dark:text-[#5D52C0] dark:hover:text-[#7F20DF]" href="https://dns.demosjarco.dev/api/">
 					API
 				</a>{' '}
-				<a target="_blank" class="text-[#F48120] underline hover:text-[#FAAD3F] dark:text-[#5D52C0] dark:hover:text-[#7F20DF]" href={`https://github.com/demosjarco/dns-checker/commit/${(import.meta as ImportMeta & { env?: { PUBLIC_GIT_HASH?: string } }).env?.PUBLIC_GIT_HASH ?? 'main'}`}>
+				<a target="_blank" class="text-[#F48120] underline hover:text-[#FAAD3F] dark:text-[#5D52C0] dark:hover:text-[#7F20DF]" href={`https://github.com/demosjarco/dns-checker/commit/${gitHash.value ?? 'main'}`}>
 					Source
 				</a>
 			</p>
