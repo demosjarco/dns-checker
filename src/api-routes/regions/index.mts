@@ -1,7 +1,6 @@
-import { DOLocations } from '@chainfuse/types';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { endTime, startTime } from 'hono/timing';
-import type { ContextVariables, EnvVars } from '~/types';
+import { DOLocations, type ContextVariables, type EnvVars } from '~/types';
 import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();
