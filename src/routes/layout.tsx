@@ -1,5 +1,5 @@
 import { component$, Slot, useContextProvider, useStore } from '@builder.io/qwik';
-import type { RequestHandler } from '@builder.io/qwik-city';
+import { routeLoader$, type RequestHandler } from '@builder.io/qwik-city';
 import { LocationsContext } from '~/context';
 
 export const onGet: RequestHandler = ({ cacheControl }) => {
@@ -12,6 +12,8 @@ export const onGet: RequestHandler = ({ cacheControl }) => {
 		maxAge: 5,
 	});
 };
+
+export const useGitHash = routeLoader$(({ env }) => env.get('GIT_HASH'));
 
 export default component$(() => {
 	useContextProvider(LocationsContext, useStore({}, { deep: true }));
