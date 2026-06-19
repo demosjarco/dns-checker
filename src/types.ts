@@ -13,7 +13,7 @@ export interface InstanceData {
 	location: DOLocations;
 }
 
-export const PROBE_DB_D1_ID = 'c5bdb710-7b13-4b0f-8a55-2ccaaa94e48d' as const;
+export const PROBE_DB_D1_ID = 'db1f9a6b-1650-4571-a79b-008e4ab26b13' as const;
 
 export interface ContextVariables extends TimingVariables {
 	browserCachePolicy: boolean;
