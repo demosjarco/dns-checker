@@ -31,6 +31,8 @@ export enum DOLocations {
 	'Western Europe' = 'weur',
 	'Eastern Europe' = 'eeur',
 	'Asia-Pacific' = 'apac',
+	'Northeast Asia-Pacific' = 'apac-ne',
+	'Southeast Asia-Pacific' = 'apac-se',
 	'Oceania' = 'oc',
 	'Africa' = 'afr',
 	'Middle East' = 'me',
