@@ -31,21 +31,18 @@ export default {
 
 			c.set(
 				'db',
-				drizzle(c.var.dbSession as unknown as D1Database, {
+				drizzle(c.var.dbSession, {
 					schema,
-					casing: 'snake_case',
 					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-					cache: c.var.browserCachePolicy
-						? await import('~/utils/sqlCache').then(
-								async ({ SQLCache }) =>
-									new SQLCache({
-										dbName: await import('~/types.js').then(({ PROBE_DB_D1_ID }) => PROBE_DB_D1_ID),
-										dbType: 'd1',
-										cacheTTL: parseInt(env.SQL_TTL, 10),
-										strategy: 'all',
-									}),
-							)
-						: undefined,
+					cache: await import('~/utils/sqlCache').then(
+						async ({ SQLCache }) =>
+							new SQLCache({
+								dbName: await import('~/types.js').then(({ PROBE_DB_D1_ID }) => PROBE_DB_D1_ID),
+								dbType: 'd1',
+								cacheTTL: parseInt(env.SQL_TTL, 10),
+								strategy: c.var.browserCachePolicy ? 'all' : 'explicit',
+							}),
+					),
 				}),
 			);
 

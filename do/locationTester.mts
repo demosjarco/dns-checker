@@ -43,10 +43,9 @@ export class LocationTester extends DurableObject<EnvVars> {
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
 
-		this.db = drizzle(this.env.PROBE_DB.withSession() as unknown as D1Database, {
+		this.db = drizzle(this.env.PROBE_DB.withSession(), {
 			schema,
 			logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-			casing: 'snake_case',
 			cache: new SQLCache({ dbName: PROBE_DB_D1_ID, dbType: 'd1', cacheTTL: parseInt(this.env.SQL_TTL, 10), strategy: 'all' }),
 		});
 

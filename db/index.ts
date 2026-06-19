@@ -1,43 +1,9 @@
 import { isNotNull, or, sql, type SQL } from 'drizzle-orm/sql';
-import { check, sqliteTable, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
-import type { DOLocations } from '~/types';
+import { check, index, snakeCase, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import type iataData from 'iata-location/data';
+import { DOLocations } from '~/types';
 
-/**
- * @returns a copy of string `x` with all ASCII characters converted to lower case
- * @link https://sqlite.org/lang_corefunc.html#lower
- */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-constraint
-function lower<T extends unknown = string>(x: AnySQLiteColumn) {
-	return sql<T>`lower(${x})`;
-}
-
-export const locations = sqliteTable(
-	'locations',
-	(l) => ({
-		location: l.text({ mode: 'text' }).primaryKey().$type<DOLocations>(),
-		doh: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
-		dot: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
-	}),
-	(l) => [uniqueIndex('case_insensitive_location').on(lower(l.location))],
-);
-
-export const instances = sqliteTable('instances', (i) => ({
-	do_id: i.blob({ mode: 'buffer' }).primaryKey(),
-	/**
-	 * @deprecated DO NOT USE (BufferHelpers is faster and cheaper)
-	 */
-	do_id_hex: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.do_id}))`, { mode: 'virtual' }),
-	location: i
-		.text({ mode: 'text' })
-		.notNull()
-		.$type<DOLocations>()
-		.references(() => locations.location, { onUpdate: 'cascade', onDelete: 'cascade' }),
-	iata: i.text({ mode: 'text' }).unique().notNull().$type<keyof typeof import('iata-location/data')>(),
-	iso_country: i.text({ mode: 'text' }).notNull(),
-	iso_region: i.text({ mode: 'text' }),
-}));
-
-export const global_servers = sqliteTable(
+export const global_servers = snakeCase.table(
 	'global_servers',
 	(gs) => ({
 		doh: gs.text({ mode: 'text' }).unique(),
@@ -46,5 +12,43 @@ export const global_servers = sqliteTable(
 	(gs) => [
 		//
 		check('global_servers_has_dns_endpoint', or(isNotNull(gs.doh), isNotNull(gs.dot))!),
+	],
+);
+
+export const instances = snakeCase.table(
+	'instances',
+	(i) => ({
+		do_id: i.blob({ mode: 'buffer' }).primaryKey().notNull(),
+		/**
+		 * @deprecated DO NOT USE (BufferHelpers is faster and cheaper)
+		 */
+		do_id_hex: i.text().generatedAlwaysAs((): SQL => sql`lower(hex(${instances.do_id}))`, { mode: 'virtual' }),
+		location: i
+			.text({ enum: Object.values(DOLocations) as [DOLocations, ...DOLocations[]] })
+			.notNull()
+			.references(() => locations.location, { onUpdate: 'cascade', onDelete: 'cascade' }),
+		iata: i.text({ mode: 'text' }).unique().notNull().$type<keyof typeof iataData>(),
+		iso_country: i.text({ mode: 'text' }).notNull(),
+		iso_region: i.text({ mode: 'text' }),
+	}),
+	(i) => [
+		//
+		index('instances_location').on(i.location),
+	],
+);
+
+export const locations = snakeCase.table(
+	'locations',
+	(l) => ({
+		location: l
+			.text({ enum: Object.values(DOLocations) as [DOLocations, ...DOLocations[]] })
+			.primaryKey()
+			.notNull(),
+		doh: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
+		dot: l.text({ mode: 'json' }).notNull().$type<string[]>().default([]),
+	}),
+	(l) => [
+		//
+		uniqueIndex('case_insensitive_location').on(sql<string>`lower(${l.location})`),
 	],
 );

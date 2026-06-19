@@ -74,9 +74,8 @@ interface LoadBalancerCountryRegion {
 }
 
 export async function scheduled<Props = unknown>(controller: ScheduledController, env: EnvVars, ctx: ExecutionContext<Props>): Promise<void | Promise<void>> {
-	const db = drizzle(env.PROBE_DB.withSession() as unknown as D1Database, {
+	const db = drizzle(env.PROBE_DB.withSession(), {
 		schema,
-		casing: 'snake_case',
 		logger: new DefaultLogger({ writer: new DebugLogWriter() }),
 		cache: new SQLCache({
 			dbName: PROBE_DB_D1_ID,
