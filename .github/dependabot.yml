@@ -53,8 +53,6 @@ updates:
     open-pull-requests-limit: 999
     cooldown:
       semver-major-days: 1
-      semver-minor-days: 1
-      semver-patch-days: 1
     groups:
       cloudflare:
         patterns:
