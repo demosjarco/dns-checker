@@ -1,5 +1,4 @@
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
-import type { RequestIdVariables } from 'hono/request-id';
 import type { TimingVariables } from 'hono/timing';
 import type * as schema from '~db/index';
 
@@ -16,11 +15,10 @@ export interface InstanceData {
 
 export const PROBE_DB_D1_ID = 'c5bdb710-7b13-4b0f-8a55-2ccaaa94e48d' as const;
 
-export interface ContextVariables extends RequestIdVariables, TimingVariables {
+export interface ContextVariables extends TimingVariables {
 	browserCachePolicy: boolean;
 	dbSession: D1DatabaseSession;
 	db: DrizzleD1Database<typeof schema>;
-	requestDate: Date;
 }
 
 /**
