@@ -21,7 +21,6 @@
 	},
 	"secrets": { "required": ["CF_API_TOKEN"] },
 	"assets": {
-		"binding": "ASSET",
 		"directory": "./dist",
 		"run_worker_first": false
 	},
