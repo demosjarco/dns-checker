@@ -51,9 +51,9 @@ export class LocationTester extends DurableObject<EnvVars> {
 		});
 
 		ctx.waitUntil(
-			this.ctx.storage.getAlarm().then(async (alarm) => {
+			this.ctx.storage.getAlarm({ allowConcurrency: true }).then(async (alarm) => {
 				if (!alarm) {
-					await this.ctx.storage.setAlarm(this.getNextHour());
+					await this.ctx.storage.setAlarm(this.getNextHour(), { allowConcurrency: true });
 				}
 			}),
 		);
@@ -106,7 +106,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	private get _iata() {
-		return this.ctx.storage.get<string>('iata').then((iata) => {
+		return this.ctx.storage.get<string>('iata', { allowConcurrency: true }).then((iata) => {
 			if (iata) {
 				return iata;
 			} else {
@@ -121,7 +121,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 	/** public get fullColo() {
 		return Promise.all([
 			this.fl,
-			fetch(new URL('Cloudflare-Mining/Cloudflare-Datamining/refs/heads/main/data/other/colos-id-map.json', 'https://raw.githubusercontent.com'), {
+			fetch(new URL('https://raw.githubusercontent.com/Cloudflare-Mining/Cloudflare-Datamining/refs/heads/main/data/other/colos-id-map.json'), {
 				cf: {
 					cacheTtlByStatus: {
 						// minutes * seconds
@@ -140,7 +140,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}*/
 
 	public lockIn(iata: string) {
-		return this.ctx.storage.put('iata', iata);
+		return this.ctx.storage.put('iata', iata, { allowConcurrency: true });
 	}
 
 	public async nuke(reason?: string) {
@@ -353,10 +353,14 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	override async alarm() {
-		this.ctx.waitUntil(this.ctx.storage.setAlarm(this.getNextHour()));
+		this.ctx.waitUntil(this.ctx.storage.setAlarm(this.getNextHour(), { allowConcurrency: true }));
 
 		// Self nuke if no longer in original location
-		await Promise.all([this.ctx.storage.get<string>('iata'), this.iata]).then(async ([storedIata, currentIata]) => {
+		await Promise.all([
+			//
+			this.ctx.storage.get<string>('iata', { allowConcurrency: true }),
+			this.iata,
+		]).then(async ([storedIata, currentIata]) => {
 			if (storedIata === currentIata) {
 				console.debug('Verified', storedIata, "hasn't moved");
 			} else {
