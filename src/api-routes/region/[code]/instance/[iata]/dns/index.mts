@@ -88,7 +88,10 @@ app.openapi(
 		endTime(c, 'db');
 
 		if (lockedDo) {
-			const doStub = c.env.LOCATION_TESTER.get(c.env.LOCATION_TESTER.idFromString(lockedDo.do_id), { locationHint: lockedDo.location });
+			const doStub = c.env.LOCATION_TESTER.get(c.env.LOCATION_TESTER.idFromString(lockedDo.do_id), {
+				// @ts-expect-error new locations not yet added to types
+				locationHint: lockedDo.location,
+			});
 
 			const responses = await Promise.all(
 				servers.map((server) =>
