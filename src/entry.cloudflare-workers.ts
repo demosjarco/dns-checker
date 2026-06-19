@@ -1,10 +1,10 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
-import type { Context } from 'hono';
 import type { ContextVariables, EnvVars } from '~/types.js';
 import { DebugLogWriter } from '~db/extras';
 import * as schema from '~db/index';
 
+// Re-export Durable Objects since workerd can only find from `wrangler.jsonc`'s `main` file
 export { LocationTester } from '~do/locationTester.mjs';
 
 export default {
@@ -49,14 +49,6 @@ export default {
 				}),
 			);
 
-			if (c.req.raw.headers.has('X-Timestamp-S') && c.req.raw.headers.has('X-Timestamp-MS')) {
-				c.set('requestDate', new Date(parseInt(c.req.header('X-Timestamp-S')!, 10) * 1000 + parseInt(c.req.header('X-Timestamp-MS')!, 10)));
-			} else if (request.cf?.clientTcpRtt) {
-				c.set('requestDate', new Date(Date.now() - request.cf.clientTcpRtt));
-			} else {
-				c.set('requestDate', new Date());
-			}
-
 			await next();
 
 			const d1bookmark = c.var.dbSession.getBookmark();
@@ -89,41 +81,6 @@ export default {
 		);
 
 		// Debug
-		app.use('*', (c, next) =>
-			Promise.all([import('hono/request-id'), import('uuid'), import('node:crypto')]).then(([{ requestId }, { v7: uuidv7 }, { randomBytes, createHash }]) =>
-				requestId({
-					generator: (c: Context<{ Bindings: EnvVars; Variables: ContextVariables }>) => {
-						// Try and get ray id properly (<16 digit hex>-<colo IATA>)
-						let rawRayId = c.req.header('cf-ray');
-
-						// Fuck it, we make up our own
-						rawRayId ??= (() => {
-							// Use uuid7 for timestamp + globally random
-							const uuid = uuidv7({ random: randomBytes(16), msecs: c.var.requestDate.getTime() });
-							const uuidHex = uuid.replaceAll('-', '');
-
-							// We don't use full raw value. We hash it
-							const hash = createHash('sha256').update(uuidHex).digest('hex');
-
-							// Timestamp is first 16 bytes (but we ignore the first 2 because that's such a high magnitude of time), then backfil with the ending of the hash
-							return `${uuidHex.slice(2, 8)}${hash.slice(-10)}`;
-						})();
-
-						const rayIdSections = rawRayId.split('-');
-						if (rayIdSections.length === 2) {
-							return rawRayId;
-						} else {
-							const colo = c.req.raw.cf?.colo as IncomingRequestCfPropertiesBase['colo'] | undefined;
-							return `${rawRayId}-${colo}`;
-						}
-					},
-				})(
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-					c,
-					next,
-				),
-			),
-		);
 		app.use('*', (c, next) =>
 			import('hono/timing').then(({ timing }) =>
 				timing()(
