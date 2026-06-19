@@ -1,0 +1,214 @@
+{
+	"version": "7",
+	"dialect": "sqlite",
+	"id": "ca0c6f81-f2fc-42d3-bd38-9d46d028ecfd",
+	"prevIds": ["00000000-0000-0000-0000-000000000000"],
+	"ddl": [
+		{
+			"name": "global_servers",
+			"entityType": "tables"
+		},
+		{
+			"name": "instances",
+			"entityType": "tables"
+		},
+		{
+			"name": "locations",
+			"entityType": "tables"
+		},
+		{
+			"type": "text",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "doh",
+			"entityType": "columns",
+			"table": "global_servers"
+		},
+		{
+			"type": "text",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "dot",
+			"entityType": "columns",
+			"table": "global_servers"
+		},
+		{
+			"type": "blob",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "do_id",
+			"entityType": "columns",
+			"table": "instances"
+		},
+		{
+			"type": "text",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": {
+				"as": "(lower(hex(\"do_id\")))",
+				"type": "virtual"
+			},
+			"name": "do_id_hex",
+			"entityType": "columns",
+			"table": "instances"
+		},
+		{
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "location",
+			"entityType": "columns",
+			"table": "instances"
+		},
+		{
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "iata",
+			"entityType": "columns",
+			"table": "instances"
+		},
+		{
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "iso_country",
+			"entityType": "columns",
+			"table": "instances"
+		},
+		{
+			"type": "text",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "iso_region",
+			"entityType": "columns",
+			"table": "instances"
+		},
+		{
+			"type": "text",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"name": "location",
+			"entityType": "columns",
+			"table": "locations"
+		},
+		{
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": "'[]'",
+			"generated": null,
+			"name": "doh",
+			"entityType": "columns",
+			"table": "locations"
+		},
+		{
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": "'[]'",
+			"generated": null,
+			"name": "dot",
+			"entityType": "columns",
+			"table": "locations"
+		},
+		{
+			"columns": ["location"],
+			"tableTo": "locations",
+			"columnsTo": ["location"],
+			"onUpdate": "CASCADE",
+			"onDelete": "CASCADE",
+			"nameExplicit": false,
+			"name": "fk_instances_location_locations_location_fk",
+			"entityType": "fks",
+			"table": "instances"
+		},
+		{
+			"columns": ["do_id"],
+			"nameExplicit": false,
+			"name": "instances_pk",
+			"table": "instances",
+			"entityType": "pks"
+		},
+		{
+			"columns": ["location"],
+			"nameExplicit": false,
+			"name": "locations_pk",
+			"table": "locations",
+			"entityType": "pks"
+		},
+		{
+			"columns": [
+				{
+					"value": "location",
+					"isExpression": false
+				}
+			],
+			"isUnique": false,
+			"where": null,
+			"origin": "manual",
+			"name": "instances_location",
+			"entityType": "indexes",
+			"table": "instances"
+		},
+		{
+			"columns": [
+				{
+					"value": "lower(\"location\")",
+					"isExpression": true
+				}
+			],
+			"isUnique": true,
+			"where": null,
+			"origin": "manual",
+			"name": "case_insensitive_location",
+			"entityType": "indexes",
+			"table": "locations"
+		},
+		{
+			"columns": ["doh"],
+			"nameExplicit": false,
+			"name": "global_servers_doh_unique",
+			"entityType": "uniques",
+			"table": "global_servers"
+		},
+		{
+			"columns": ["dot"],
+			"nameExplicit": false,
+			"name": "global_servers_dot_unique",
+			"entityType": "uniques",
+			"table": "global_servers"
+		},
+		{
+			"columns": ["iata"],
+			"nameExplicit": false,
+			"name": "instances_iata_unique",
+			"entityType": "uniques",
+			"table": "instances"
+		},
+		{
+			"value": "(((\"doh\" is not null)) or ((\"dot\" is not null)))",
+			"name": "global_servers_has_dns_endpoint",
+			"entityType": "checks",
+			"table": "global_servers"
+		}
+	],
+	"renames": []
+}
