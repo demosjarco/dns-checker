@@ -217,8 +217,8 @@ export async function scheduled<Props = unknown>(controller: ScheduledController
 						})();
 
 						let created = false;
-						// 1000 request max in workers (leave 100 aside for other operations) / 2 (half because each try has to make a network request)
-						const attempts = Math.round((1000 - 100) / 2 / iatasToCreate.length);
+						// 10,000,000 request max in workers (leave 100 aside for other operations) / 2 (half because each try has to make a network request)
+						const attempts = Math.round((10000000 - 100) / 2 / iatasToCreate.length);
 						for (let i = 0; i < attempts; i++) {
 							/**
 							 * Jitter each attempt to avoid thundering herd
