@@ -141,7 +141,10 @@ export async function scheduled<Props = unknown>(controller: ScheduledController
 		ctx.waitUntil(
 			Promise.allSettled(
 				instancesToDelete.map(async (instanceToDelete) => {
-					const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(instanceToDelete.do_id), { locationHint: instanceToDelete.location });
+					const stub = env.LOCATION_TESTER.get(env.LOCATION_TESTER.idFromString(instanceToDelete.do_id), {
+						// @ts-expect-error new locations not yet added to types
+						locationHint: instanceToDelete.location,
+					});
 
 					await stub.nuke(`Deleting stale iata ${instanceToDelete.iata}`);
 				}),
@@ -195,7 +198,7 @@ export async function scheduled<Props = unknown>(controller: ScheduledController
 								case 'NAF':
 									return DOLocations.Africa;
 								case 'NEAS':
-									return DOLocations['Asia-Pacific'];
+									return DOLocations['Northeast Asia-Pacific'];
 								case 'NSAM':
 									return DOLocations['South America'];
 								case 'OC':
@@ -205,7 +208,7 @@ export async function scheduled<Props = unknown>(controller: ScheduledController
 								case 'SAS':
 									return DOLocations['Asia-Pacific'];
 								case 'SEAS':
-									return DOLocations['Asia-Pacific'];
+									return DOLocations['Southeast Asia-Pacific'];
 								case 'SSAM':
 									return DOLocations['South America'];
 								case 'WEU':
@@ -228,7 +231,10 @@ export async function scheduled<Props = unknown>(controller: ScheduledController
 							console.debug(`Attempt ${i}:`, 'Attempting to spawn', iataToCreate, 'in', matchingRegion);
 
 							const do_id = env.LOCATION_TESTER.newUniqueId();
-							const doStub = env.LOCATION_TESTER.get(do_id, { locationHint });
+							const doStub = env.LOCATION_TESTER.get(do_id, {
+								// @ts-expect-error new locations not yet added to types
+								locationHint,
+							});
 
 							const actualIata = await doStub.iata;
 							console.debug(`Attempt ${i}:`, 'Got', actualIata, 'expected', iataToCreate);
