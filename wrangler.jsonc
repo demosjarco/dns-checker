@@ -8,7 +8,6 @@
 	"workers_dev": false,
 	"preview_urls": false,
 	"route": { "pattern": "dns.demosjarco.dev", "custom_domain": true },
-	"triggers": { "crons": ["0 * * * *"] },
 	"minify": true,
 	"keep_names": false,
 	"upload_source_maps": true,
@@ -46,6 +45,15 @@
 		{
 			"tag": "6de84bb",
 			"new_sqlite_classes": ["LocationTester"]
+		}
+	],
+	"workflows": [
+		{
+			"name": "dns-update-iatas",
+			"binding": "UPDATE_IATAS",
+			"class_name": "UpdateIatas",
+			"limits": { "steps": 25000 },
+			"schedules": ["0 * * * *"]
 		}
 	]
 }
