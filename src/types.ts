@@ -52,3 +52,16 @@ export enum DNSRecordType {
 	'TLSA (certificate associations)' = 'TLSA',
 	'TXT (Text)' = 'TXT',
 }
+
+/**
+ * Temporary
+ * @link https://github.com/elsbrock/iata-location/issues/3
+ */
+export interface Airport {
+	latitude_deg: string;
+	longitude_deg: string;
+	iso_country: string;
+	iso_region: `${string}-${string}`;
+	municipality: string;
+	iata_code: string;
+}

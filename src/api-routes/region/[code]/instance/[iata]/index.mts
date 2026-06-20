@@ -2,8 +2,7 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { and, eq } from 'drizzle-orm/sql';
 import { endTime, startTime } from 'hono/timing';
 import dns from '~/api-routes/region/[code]/instance/[iata]/dns/index.mjs';
-import type { Airport } from '~/scheduled/index.js';
-import { DOLocations, type ContextVariables, type EnvVars } from '~/types';
+import { DOLocations, type Airport, type ContextVariables, type EnvVars } from '~/types';
 import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();

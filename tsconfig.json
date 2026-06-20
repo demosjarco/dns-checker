@@ -33,7 +33,8 @@
 		"paths": {
 			"~/*": ["./src/*"],
 			"~db/*": ["./db/*"],
-			"~do/*": ["./do/*"]
+			"~do/*": ["./do/*"],
+			"~wf/*": ["./wf/*"]
 		} /* Specify a set of entries that re-map imports to additional lookup locations. */,
 		// "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
 		// "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */
@@ -115,5 +116,5 @@
 		"skipLibCheck": true /* Skip type checking all .d.ts files. */
 	},
 	"files": ["./prettier.config.mjs", "eslint.config.mjs"],
-	"include": ["db", "src", "do", "adapters", "./*.d.ts", "./*.config.ts"]
+	"include": ["adapters", "db", "do", "src", "wf", "./*.d.ts", "./*.config.ts"]
 }
