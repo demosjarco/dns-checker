@@ -1,98 +1,60 @@
 import { drizzle } from 'drizzle-orm/d1';
-import { DefaultLogger } from 'drizzle-orm/logger';
-import type { ContextVariables, EnvVars } from '~/types.js';
-import { DebugLogWriter } from '~db/extras';
+import { Hono } from 'hono';
+import { contextStorage } from 'hono/context-storage';
+import { cors } from 'hono/cors';
+import { etag } from 'hono/etag';
+import { timing } from 'hono/timing';
+import baseApp from '~/api-routes/index.mjs';
+import { PROBE_DB_D1_ID, type ContextVariables, type EnvVars } from '~/types.js';
+import { SQLCache } from '~/utils/sqlCache';
 import * as schema from '~db/index';
 
 // Re-export Durable Objects since workerd can only find from `wrangler.jsonc`'s `main` file
 export { LocationTester } from '~do/locationTester.mjs';
 
-export default {
-	fetch: async (request, env, ctx) => {
-		const app = await import('hono').then(({ Hono }) => new Hono<{ Bindings: EnvVars; Variables: ContextVariables }>());
+// Re-export Workflows since workerd can only find from from `wrangler.jsonc`'s `main` file
+export { UpdateIatas } from '~wf/updateIatas.js';
 
-		// Variable Setup
-		app.use('*', (c, next) =>
-			import('hono/context-storage').then(({ contextStorage }) =>
-				contextStorage()(
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-					c,
-					next,
-				),
-			),
-		);
-		app.use('*', async (c, next) => {
-			const cacheControl = new Set((c.req.header('Cache-Control')?.split(',') ?? []).map((directive) => directive.trim().toLowerCase()));
-			// RFC 7234: no-store forbids storing; no-cache/zero max-age require revalidation so we skip reads
-			const antiCacheHeader = cacheControl.has('no-store') || cacheControl.has('no-cache') || cacheControl.has('max-age=0');
-			c.set('browserCachePolicy', !antiCacheHeader);
+const app = new Hono<{ Bindings: EnvVars; Variables: ContextVariables }>();
 
-			c.set('dbSession', c.env.PROBE_DB.withSession(c.req.header('X-D1-Bookmark') ?? 'first-unconstrained'));
+// Variable Setup
+app.use('*', contextStorage());
+app.use('*', async (c, next) => {
+	const cacheControl = new Set((c.req.header('Cache-Control')?.split(',') ?? []).map((directive) => directive.trim().toLowerCase()));
+	// RFC 7234: no-store forbids storing; no-cache/zero max-age require revalidation so we skip reads
+	const antiCacheHeader = cacheControl.has('no-store') || cacheControl.has('no-cache') || cacheControl.has('max-age=0');
+	c.set('browserCachePolicy', !antiCacheHeader);
 
-			c.set(
-				'db',
-				drizzle(c.var.dbSession, {
-					schema,
-					logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-					cache: await import('~/utils/sqlCache').then(
-						async ({ SQLCache }) =>
-							new SQLCache({
-								dbName: await import('~/types.js').then(({ PROBE_DB_D1_ID }) => PROBE_DB_D1_ID),
-								dbType: 'd1',
-								cacheTTL: parseInt(env.SQL_TTL, 10),
-								strategy: c.var.browserCachePolicy ? 'all' : 'explicit',
-							}),
-					),
-				}),
-			);
+	c.set('dbSession', c.env.PROBE_DB.withSession(c.req.header('X-D1-Bookmark') ?? 'first-unconstrained'));
 
-			await next();
+	c.set(
+		'db',
+		drizzle(c.var.dbSession, {
+			schema,
+			cache: new SQLCache({
+				dbName: PROBE_DB_D1_ID,
+				dbType: 'd1',
+				cacheTTL: parseInt(c.env.SQL_TTL, 10),
+				strategy: c.var.browserCachePolicy ? 'all' : 'explicit',
+			}),
+		}),
+	);
 
-			const d1bookmark = c.var.dbSession.getBookmark();
-			if (d1bookmark) c.header('X-D1-Bookmark', d1bookmark);
-		});
+	await next();
 
-		// Security
-		app.use('*', (c, next) =>
-			import('hono/cors').then(({ cors }) =>
-				cors({
-					origin: '*',
-					maxAge: 300,
-				})(
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-					c,
-					next,
-				),
-			),
-		);
+	const d1bookmark = c.var.dbSession.getBookmark();
+	if (d1bookmark) c.header('X-D1-Bookmark', d1bookmark);
+});
 
-		// Performance
-		app.use('*', (c, next) =>
-			import('hono/etag').then(({ etag }) =>
-				etag()(
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-					c,
-					next,
-				),
-			),
-		);
+// Security
+app.use('*', cors({ origin: '*', maxAge: 300 }));
 
-		// Debug
-		app.use('*', (c, next) =>
-			import('hono/timing').then(({ timing }) =>
-				timing()(
-					// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-					c,
-					next,
-				),
-			),
-		);
+// Performance
+app.use('*', etag());
 
-		await import('~/api-routes/index.mjs').then(({ default: baseApp }) => app.route('/', baseApp));
+// Debug
+app.use('*', timing());
 
-		return app.fetch(request, env, ctx);
-	},
-	scheduled: async (controller, env, ctx) => {
-		await import('~/scheduled/index').then(({ scheduled }) => scheduled(controller, env, ctx));
-	},
-} satisfies ExportedHandler<EnvVars>;
+app.route('/', baseApp);
+
+export default app;

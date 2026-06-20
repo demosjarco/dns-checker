@@ -12,6 +12,7 @@ on:
       - 'do/**'
       - 'public/**'
       - 'src/**'
+      - 'wf/**'
       - '*.config.*js'
       - '*.config.*ts'
       - 'wrangler.jsonc'
