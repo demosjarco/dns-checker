@@ -8,6 +8,7 @@ on:
       - '.github/workflows/publish.yml'
       - 'adapters/**'
       - 'db/**'
+      - 'dist/**'
       - 'do/**'
       - 'public/**'
       - 'src/**'
