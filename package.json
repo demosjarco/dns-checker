@@ -51,7 +51,7 @@
 		"hono": "4.12.26",
 		"iata-location": "1.0.1",
 		"leaflet": "1.9.4",
-		"uuid": "14.0.0",
+		"uuid": "14.0.1",
 		"zod": "4.4.3"
 	},
 	"devDependencies": {
