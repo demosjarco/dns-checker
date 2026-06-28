@@ -45,7 +45,7 @@
 	"dependencies": {
 		"@hono/zod-openapi": "1.4.0",
 		"@types/dns-packet": "5.6.5",
-		"cloudflare": "6.4.0",
+		"cloudflare": "6.5.0",
 		"dns-packet": "5.6.1",
 		"drizzle-orm": "1.0.0-rc.3",
 		"hono": "4.12.26",
@@ -77,7 +77,7 @@
 		"typescript": "6.0.3",
 		"typescript-eslint": "8.61.1",
 		"vite-tsconfig-paths": "6.1.1",
-		"wrangler": "4.102.0",
+		"wrangler": "4.105.0",
 		"zaraz-ts": "1.2.0"
 	}
 }
