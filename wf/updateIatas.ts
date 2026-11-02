@@ -154,7 +154,7 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 				.then((result) => result as LoadBalancerRegionResults),
 		);
 
-		await Promise.allSettled(
+		const createSummary = await Promise.allSettled(
 			iatasToCreate.map(async (iataToCreate) => {
 				const iataLocation = await lookupAirport(iataToCreate);
 				if (!iataLocation) throw new Error(`${iataToCreate} not found in iata-location data`);
@@ -275,8 +275,11 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 				} else {
 					throw new Error(`No Cloudflare location found for ${iataToCreate} (${[iataLocation.iso_region, iataLocation.iso_country].join(', ')})`);
 				}
+
+				return iataToCreate;
 			}),
 		).then((results) => {
+			const created = results.filter((result): result is PromiseFulfilledResult<IATA> => result.status === 'fulfilled').map(({ value }) => value);
 			const errors = results
 				.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
 				.map(
@@ -285,7 +288,14 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 						reason,
 				);
 
-			if (errors.length > 0) throw new AggregateError(errors, 'Failed to create some IATAs');
+			// Only fail (and trigger rollbacks) if nothing was created. Partial success keeps the instances that did spawn
+			if (errors.length > 0 && created.length === 0) throw new AggregateError(errors, 'Failed to create all IATAs');
+			if (errors.length > 0) console.warn(new AggregateError(errors, `Failed to create ${errors.length}/${results.length} IATAs`));
+
+			return {
+				created,
+				failed: errors.map((error) => (error instanceof Error ? error.message : String(error))),
+			};
 		});
 
 		await step.do('Optimize database', () =>
@@ -297,5 +307,7 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 					JSON.parse(JSON.stringify(result)),
 				),
 		);
+
+		return createSummary;
 	}
 }
