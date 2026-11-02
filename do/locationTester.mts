@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import * as dnsPacket from 'dns-packet';
-import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
+import { drizzle } from 'drizzle-orm/d1';
 import { DefaultLogger } from 'drizzle-orm/logger';
 import { eq, sql } from 'drizzle-orm/sql';
 import { Buffer } from 'node:buffer';
@@ -38,21 +38,18 @@ interface BetterPacket extends Omit<dnsPacket.Packet, 'answers'> {
 }
 
 export class LocationTester extends DurableObject<EnvVars> {
-	private db: DrizzleD1Database<typeof schema>;
+	private db = drizzle(this.env.PROBE_DB.withSession('first-unconstrained'), {
+		logger: new DefaultLogger({ writer: new DebugLogWriter() }),
+		cache: new SQLCache({
+			dbName: PROBE_DB_D1_ID,
+			dbType: 'd1',
+			cacheTTL: parseInt(this.env.SQL_TTL, 10),
+			strategy: 'explicit',
+		}),
+	});
 
 	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
 		super(ctx, env);
-
-		this.db = drizzle(this.env.PROBE_DB.withSession('first-unconstrained'), {
-			schema,
-			logger: new DefaultLogger({ writer: new DebugLogWriter() }),
-			cache: new SQLCache({
-				dbName: PROBE_DB_D1_ID,
-				dbType: 'd1',
-				cacheTTL: parseInt(this.env.SQL_TTL, 10),
-				strategy: 'explicit',
-			}),
-		});
 
 		ctx.waitUntil(
 			this.ctx.storage.getAlarm({ allowConcurrency: true }).then(async (alarm) => {

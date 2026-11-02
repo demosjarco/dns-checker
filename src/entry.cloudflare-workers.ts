@@ -6,7 +6,6 @@ import { timing } from 'hono/timing';
 import baseApp from '~/api-routes/index.mjs';
 import { PROBE_DB_D1_ID, type ContextVariables, type EnvVars } from '~/types.js';
 import { SQLCache } from '~/utils/sqlCache';
-import * as schema from '~db/index';
 
 // Re-export Durable Objects since workerd can only find from `wrangler.jsonc`'s `main` file
 export { LocationTester } from '~do/locationTester.mjs';
@@ -28,7 +27,6 @@ app.use('*', async (c, next) => {
 	c.set(
 		'db',
 		drizzle(c.var.dbSession, {
-			schema,
 			cache: new SQLCache({
 				dbName: PROBE_DB_D1_ID,
 				dbType: 'd1',
