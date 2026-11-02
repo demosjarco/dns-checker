@@ -48,18 +48,6 @@ export class LocationTester extends DurableObject<EnvVars> {
 		}),
 	});
 
-	constructor(ctx: LocationTester['ctx'], env: LocationTester['env']) {
-		super(ctx, env);
-
-		ctx.waitUntil(
-			this.ctx.storage.getAlarm({ allowConcurrency: true }).then(async (alarm) => {
-				if (!alarm) {
-					await this.ctx.storage.setAlarm(this.getNextHour(), { allowConcurrency: true });
-				}
-			}),
-		);
-	}
-
 	private getNextHour(base: Date = new Date()) {
 		const next = new Date(base);
 		// Jitter within the hour but leave ~5 minutes before the boundary
@@ -140,8 +128,11 @@ export class LocationTester extends DurableObject<EnvVars> {
 		]).then(([{ fl }, coloList]) => coloList[`${parseInt(fl.split('f')[0]!, 10)}`]?.toLowerCase());
 	}*/
 
-	public lockIn(iata: string) {
-		return this.ctx.storage.put('iata', iata, { allowConcurrency: true });
+	public async lockIn(iata: string) {
+		await this.ctx.storage.put('iata', iata, { allowConcurrency: true });
+		if (!(await this.ctx.storage.getAlarm({ allowConcurrency: true }))) {
+			await this.ctx.storage.setAlarm(this.getNextHour(), { allowConcurrency: true });
+		}
 	}
 
 	public async nuke(reason?: string) {
@@ -153,7 +144,7 @@ export class LocationTester extends DurableObject<EnvVars> {
 		// `ctx.abort` throws an uncatchable error, so we yield to the event loop to avoid capturing it and let handlers finish cleaning up
 		setTimeout(() => {
 			try {
-				this.ctx.abort('nuked');
+				this.ctx.abort('nuked', { retryAlarm: false });
 			} catch (error) {
 				// Do nothing
 			}
@@ -354,20 +345,26 @@ export class LocationTester extends DurableObject<EnvVars> {
 	}
 
 	override async alarm() {
-		this.ctx.waitUntil(this.ctx.storage.setAlarm(this.getNextHour(), { allowConcurrency: true }));
+		const storedIata = await this.ctx.storage.get<string>('iata', { allowConcurrency: true });
+
+		// Never locked in (leftover from a failed spawn or a previous nuke): no D1 row exists, just wipe storage so the DO ceases to exist
+		if (!storedIata) {
+			console.warn('Alarm fired on DO without locked in IATA, clearing storage');
+			await this.ctx.storage.deleteAll();
+			return;
+		}
+
+		// Reschedule before any network calls so a transient failure doesn't drop the hourly check. `nuke()`'s `deleteAll()` clears it again
+		await this.ctx.storage.setAlarm(this.getNextHour(), { allowConcurrency: true });
 
 		// Self nuke if no longer in original location
-		await Promise.all([
-			//
-			this.ctx.storage.get<string>('iata', { allowConcurrency: true }),
-			this.iata,
-		]).then(async ([storedIata, currentIata]) => {
-			if (storedIata === currentIata) {
-				console.debug('Verified', storedIata, "hasn't moved");
-			} else {
-				await this.nuke(`IATA drifted from ${storedIata} to ${currentIata}`);
-			}
-		});
+		const currentIata = await this.iata;
+		if (storedIata === currentIata) {
+			console.debug('Verified', storedIata, "hasn't moved");
+		} else {
+			await this.nuke(`IATA drifted from ${storedIata} to ${currentIata}`);
+			return;
+		}
 
 		// Self nuke if not recorded in D1 (prevent hanging DOs)
 		const [row] = await this.db
