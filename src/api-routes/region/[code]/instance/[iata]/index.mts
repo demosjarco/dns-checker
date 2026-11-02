@@ -2,14 +2,15 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { and, eq } from 'drizzle-orm/sql';
 import { endTime, startTime } from 'hono/timing';
 import dns from '~/api-routes/region/[code]/instance/[iata]/dns/index.mjs';
-import { DOLocations, type Airport, type ContextVariables, type EnvVars } from '~/types';
+import { DOLocations, type ContextVariables, type EnvVars } from '~/types';
+import { iataSchema, lookupAirport } from '~/utils/iata';
 import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();
 
 export const pathInput = z.object({
 	code: z.enum(DOLocations),
-	iata: z.enum(Object.keys(await import('iata-location/data').then(({ default: allAirports }) => allAirports)) as (keyof typeof import('iata-location/data'))[]),
+	iata: iataSchema,
 });
 
 const latLongRegex = /^-?\d+(\.\d+)?$/;
@@ -66,8 +67,10 @@ app.openapi(
 			);
 		endTime(c, 'db');
 
-		if (lockedDo) {
-			const { latitude_deg, longitude_deg, iso_country, municipality } = await import('iata-location/data').then(({ default: temp }) => temp[iata] as Airport);
+		const airport = lockedDo ? await lookupAirport(iata) : undefined;
+
+		if (airport) {
+			const { latitude_deg, longitude_deg, iso_country, municipality } = airport;
 
 			return c.json(
 				{
