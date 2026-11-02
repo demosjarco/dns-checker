@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -45,66 +45,81 @@ jobs:
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - run: npm run-script install --if-present
-      # - name: Restore TS cache
-      #   uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      #   with:
-      #     path: |
-      #       .tsbuildinfo
-      #     key: tsc-${{ hashFiles('**/*.tsbuildinfo', '**/package-lock.json') }}
-      #     restore-keys: |
-      #       tsc-
-      #     enableCrossOsArchive: true
-      # - name: Restore server cache
-      #   uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      #   with:
-      #     path: |
-      #       server/**
-      #     key: qwik-s-${{ hashFiles('**/*.tsbuildinfo', '**/package-lock.json') }}
-      #     restore-keys: |
-      #       qwik-s-
-      #     enableCrossOsArchive: true
+      - name: Restore TS cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            tmp/.tsbuildinfo
+          key: tsc-${{ github.ref_name }}-${{ hashFiles('tmp/.tsbuildinfo') }}
+          restore-keys: |
+            tsc-${{ github.ref_name }}-
+          enableCrossOsArchive: true
       - run: npm run build.types
-      # - name: Save TS cache
-      #   uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      #   with:
-      #     path: |
-      #       .tsbuildinfo
-      #     key: tsc-${{ hashFiles('**/*.tsbuildinfo', '**/package-lock.json') }}
-      #     enableCrossOsArchive: true
-      # - name: Restore client cache
-      #   uses: actions/cache/restore@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      #   with:
-      #     path: |
-      #       dist/**
-      #     key: qwik-c-${{ hashFiles('src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
-      #     enableCrossOsArchive: true
+      - name: Save TS cache
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            tmp/.tsbuildinfo
+          key: tsc-${{ github.ref_name }}-${{ hashFiles('tmp/.tsbuildinfo') }}
+          enableCrossOsArchive: true
+        background: true
+      # Lint ignores `dist/*` & `server/*`, so it can run alongside the builds. Gated by `wait` before deploy
+      - run: npm run lint
+        id: lint
+        background: true
+      # Client output is deterministic from its inputs, so an exact hit skips the build. No `restore-keys`: vite empties `dist` before building, so a partial restore saves nothing
+      - name: Restore client cache
+        id: client_cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            dist/**
+          key: qwik-${{ github.ref_name }}-c-${{ hashFiles('src/**', 'public/**', 'db/**', 'do/**', 'wf/**', '*.config.*js', '*.config.*ts', 'tsconfig.json', 'package-lock.json') }}
+          enableCrossOsArchive: true
       - run: npm run build.client
+        if: steps.client_cache.outputs.cache-hit != 'true'
         env:
           PUBLIC_GIT_HASH: ${{ github.sha }}
-      # - name: Save client cache
-      #   uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      #   with:
-      #     path: |
-      #       dist/**
-      #     key: qwik-c-${{ hashFiles('src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
-      #     enableCrossOsArchive: true
+      # Not `background`: the server build writes SSG output into `dist` and would race the tarball
+      - name: Save client cache
+        if: steps.client_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            dist/**
+          key: ${{ steps.client_cache.outputs.cache-primary-key }}
+          enableCrossOsArchive: true
+      # SSG bakes `GIT_HASH` into `dist/index.html` & `dist/q-data.json`, so this is per-commit (hits on re-runs). Caches `dist/**` too so a hit carries the SSG output
+      - name: Restore server cache
+        id: server_cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            server/**
+            dist/**
+          key: qwik-${{ github.ref_name }}-s-${{ github.sha }}
+          enableCrossOsArchive: true
       - run: npm run build.server
+        if: steps.server_cache.outputs.cache-hit != 'true'
         env:
           GIT_HASH: ${{ github.sha }}
-      # - name: Save server cache
-      #   uses: actions/cache/save@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
-      #   with:
-      #     path: |
-      #       server/**
-      #     key: qwik-s-${{ hashFiles('src/**', '**/*.tsbuildinfo', '**/package-lock.json') }}
-      #     enableCrossOsArchive: true
+      - name: Save server cache
+        if: steps.server_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            server/**
+            dist/**
+          key: ${{ steps.server_cache.outputs.cache-primary-key }}
+          enableCrossOsArchive: true
+        background: true
       # Qwik build nukes `dist` folder. Restore back
       - run: git restore --source=HEAD --worktree --staged -- "dist/api/"
       - run: git restore --source=HEAD --worktree --staged -- "dist/dns.cf-apig.openapi.json"
       - run: git restore --source=HEAD --worktree --staged -- "dist/llms.txt"
       - run: git restore --source=HEAD --worktree --staged -- "dist/openapi.json"
       - run: git restore --source=HEAD --worktree --staged -- "dist/openapi31.json"
-      - run: npm run lint
+      - wait: lint
       - run: echo "wrangler_version=$(npm ls wrangler --depth=0 --json | jq -r '.dependencies.wrangler.version')" >> $GITHUB_OUTPUT
         id: npm_wrangler_version
       - uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
