@@ -133,7 +133,6 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 				instancesToDelete.map((instanceToDelete) =>
 					step.do(`Delete stale ${JSON.stringify(instanceToDelete)}`, async () => {
 						const stub = this.env.LOCATION_TESTER.get(this.env.LOCATION_TESTER.idFromString(instanceToDelete.do_id), {
-							// @ts-expect-error new locations not yet added to types
 							locationHint: instanceToDelete.location,
 						});
 
@@ -225,7 +224,6 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 						async () => {
 							const do_id = this.env.LOCATION_TESTER.newUniqueId();
 							const doStub = this.env.LOCATION_TESTER.get(do_id, {
-								// @ts-expect-error new locations not yet added to types
 								locationHint,
 							});
 
@@ -265,7 +263,6 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 						{
 							rollback: async () => {
 								const doStub = this.env.LOCATION_TESTER.get(this.env.LOCATION_TESTER.idFromString(do_id), {
-									// @ts-expect-error new locations not yet added to types
 									locationHint,
 								});
 								// Nuke the DO if the database insert fails, to avoid having an orphan DO with no record in the database
