@@ -3,10 +3,10 @@ import { createClient } from 'cloudflare/tree-shakable';
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
 import { drizzle } from 'drizzle-orm/d1';
 import { sql } from 'drizzle-orm/sql';
-import * as allAirports from 'iata-location/data';
 import type { Buffer } from 'node:buffer';
 import { randomInt } from 'node:crypto';
-import { DOLocations, PROBE_DB_D1_ID, type Airport, type EnvVars } from '~/types';
+import { DOLocations, PROBE_DB_D1_ID, type EnvVars } from '~/types';
+import { lookupAirport, type IATA } from '~/utils/iata';
 import { SQLCache } from '~/utils/sqlCache';
 import * as schema from '~db/index.js';
 
@@ -98,7 +98,7 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 										.map((colo) => Object.keys(colo.hosts))
 										.flat(),
 								),
-							).map((doColo) => doColo.toUpperCase() as keyof typeof allAirports),
+							).map((doColo) => doColo.toUpperCase() as IATA),
 						);
 					} else {
 						throw new Error(`${response.status} ${response.statusText} (${response.headers.get('cf-ray')}) Failed to fetch DO colos: `);
@@ -156,7 +156,8 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 
 		await Promise.allSettled(
 			iatasToCreate.map(async (iataToCreate) => {
-				const iataLocation = (allAirports as Record<keyof typeof allAirports, Airport>)[iataToCreate];
+				const iataLocation = await lookupAirport(iataToCreate);
+				if (!iataLocation) throw new Error(`${iataToCreate} not found in iata-location data`);
 
 				// Extract subdivision code from iso_region (part after hyphen)
 				const subdivisionCode = iataLocation.iso_region.split('-')[1]?.toUpperCase();
@@ -251,7 +252,7 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 								.insert(schema.instances)
 								.values({
 									do_id: sql<Buffer>`unhex(${do_id})`,
-									iata: iataToCreate.toUpperCase() as keyof typeof allAirports,
+									iata: iataToCreate.toUpperCase() as IATA,
 									iso_country: iataLocation.iso_country.toUpperCase(),
 									/**
 									 * Only the US and Canada have subdivisions
