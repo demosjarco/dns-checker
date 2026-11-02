@@ -1,6 +1,5 @@
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import type { TimingVariables } from 'hono/timing';
-import type * as schema from '~db/index';
 
 export interface EnvVars extends Cloudflare.Env {
 	GIT_HASH?: string;
@@ -18,7 +17,7 @@ export const PROBE_DB_D1_ID = 'db1f9a6b-1650-4571-a79b-008e4ab26b13' as const;
 export interface ContextVariables extends TimingVariables {
 	browserCachePolicy: boolean;
 	dbSession: D1DatabaseSession;
-	db: DrizzleD1Database<typeof schema>;
+	db: DrizzleD1Database;
 }
 
 /**
