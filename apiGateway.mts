@@ -1,6 +1,7 @@
-import Cloudflare from 'cloudflare';
-import type { PublicSchema } from 'cloudflare/resources/schema-validation.mjs';
-import type { OperationBulkEditParams, OperationListResponse } from 'cloudflare/resources/schema-validation/settings/operations';
+import { BaseSchemas, type PublicSchema } from 'cloudflare/resources/schema-validation/schemas';
+import { BaseOperations, type OperationBulkEditParams, type OperationListResponse } from 'cloudflare/resources/schema-validation/settings/operations';
+import { BaseSettings } from 'cloudflare/resources/schema-validation/settings/settings';
+import { createClient } from 'cloudflare/tree-shakable';
 import { readdir, readFile } from 'node:fs/promises';
 import * as zm from 'zod/mini';
 
@@ -11,7 +12,7 @@ const { CF_API_TOKEN, ZONE_ID } = await zm
 	})
 	.parseAsync(process.env);
 
-const cf = new Cloudflare({ apiToken: CF_API_TOKEN });
+const cf = createClient({ apiToken: CF_API_TOKEN, resources: [BaseSchemas, BaseSettings, BaseOperations] });
 
 const [oldSchemas, fileRoutes] = await Promise.all([
 	(async () => {
