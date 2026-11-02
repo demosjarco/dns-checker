@@ -60,7 +60,7 @@
 		"@demosjarco/prettier-config": "1.0.2",
 		"@eslint/js": "10.0.1",
 		"@rollup/plugin-node-resolve": "16.0.3",
-		"@scalar/openapi-to-markdown": "1.5.1",
+		"@scalar/openapi-to-markdown": "1.7.3",
 		"@tailwindcss/vite": "4.3.3",
 		"@types/leaflet": "1.9.22",
 		"@types/node": "26.6.6",
