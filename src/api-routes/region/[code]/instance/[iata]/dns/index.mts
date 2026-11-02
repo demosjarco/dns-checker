@@ -89,7 +89,6 @@ app.openapi(
 
 		if (lockedDo) {
 			const doStub = c.env.LOCATION_TESTER.get(c.env.LOCATION_TESTER.idFromString(lockedDo.do_id), {
-				// @ts-expect-error new locations not yet added to types
 				locationHint: lockedDo.location,
 			});
 
