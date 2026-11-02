@@ -12,7 +12,7 @@
 	"keep_names": false,
 	"upload_source_maps": true,
 	"observability": { "logs": { "enabled": true }, "traces": { "enabled": true } },
-	"limits": { "cpu_ms": 30000, "subrequests": 10000000 },
+	"limits": { "cpu_ms": 250, "subrequests": 10000000 },
 	"vars": {
 		"NODE_ENV": "production",
 		// 1 hour * 60 minutes * 60 seconds
