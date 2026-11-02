@@ -6,11 +6,17 @@ import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();
 
+/**
+ * `z.regexes.domain` minus its `(?=.{1,253}$)` look-ahead, which API Shield schema validation rejects (40047)
+ * The 253 length cap is enforced with `.max()` (`maxLength`) instead
+ */
+const domainRegex = /^([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$/;
+
 export const pathInput = z.object({
 	code: z.enum(DOLocations),
 	iata: z.enum(Object.keys(await import('iata-location/data').then(({ default: allAirports }) => allAirports)) as (keyof typeof import('iata-location/data'))[]),
 	rrtype: z.enum(DNSRecordType),
-	hostname: z.string().trim().nonempty().regex(z.regexes.domain),
+	hostname: z.string().trim().nonempty().max(253).regex(domainRegex),
 });
 
 export const output = z.record(
