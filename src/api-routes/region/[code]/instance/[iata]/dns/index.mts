@@ -2,13 +2,14 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { and, eq } from 'drizzle-orm/sql';
 import { endTime, startTime, wrapTime } from 'hono/timing';
 import { DNSRecordType, DOLocations, type ContextVariables, type EnvVars } from '~/types';
+import { iataSchema } from '~/utils/iata';
 import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();
 
 export const pathInput = z.object({
 	code: z.enum(DOLocations),
-	iata: z.enum(Object.keys(await import('iata-location/data').then(({ default: allAirports }) => allAirports)) as (keyof typeof import('iata-location/data'))[]),
+	iata: iataSchema,
 	rrtype: z.enum(DNSRecordType),
 	hostname: z.string().trim().nonempty().regex(z.regexes.domain),
 });
