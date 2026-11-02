@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm/sql';
 import { endTime, startTime } from 'hono/timing';
 import instance from '~/api-routes/region/[code]/instance/[iata]/index.mjs';
 import { DOLocations, type ContextVariables, type EnvVars } from '~/types';
+import { iataSchema } from '~/utils/iata';
 import * as schema from '~db/index';
 
 const app = new OpenAPIHono<{ Bindings: EnvVars; Variables: ContextVariables }>();
@@ -11,7 +12,7 @@ export const pathInput = z.object({
 	code: z.enum(DOLocations),
 });
 
-export const output = z.array(z.enum(Object.keys(await import('iata-location/data').then(({ default: allAirports }) => allAirports)) as (keyof typeof import('iata-location/data'))[]));
+export const output = z.array(iataSchema);
 
 app.openapi(
 	createRoute({
