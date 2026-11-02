@@ -1,4 +1,5 @@
-import { Cloudflare } from 'cloudflare';
+import { BaseRegions } from 'cloudflare/resources/load-balancers/regions';
+import { createClient } from 'cloudflare/tree-shakable';
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
 import { drizzle } from 'drizzle-orm/d1';
 import { sql } from 'drizzle-orm/sql';
@@ -146,8 +147,8 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 		const iatasToCreate = doIatas.filter((doIata) => !instancesIatas.includes(doIata));
 
 		const { regions } = await step.do('Fetch Cloudflare regions', () =>
-			new Cloudflare({ apiToken: this.env.CF_API_TOKEN }).loadBalancers.regions
-				.list({
+			createClient({ apiToken: this.env.CF_API_TOKEN, resources: [BaseRegions] })
+				.loadBalancers.regions.list({
 					account_id: this.env.CF_ACCOUNT_ID,
 				})
 				.then((result) => result as LoadBalancerRegionResults),
