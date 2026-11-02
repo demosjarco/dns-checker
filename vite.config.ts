@@ -2,6 +2,7 @@ import { qwikCity } from '@builder.io/qwik-city/vite';
 import { qwikVite } from '@builder.io/qwik/optimizer';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import tailwindcss from '@tailwindcss/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, type UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -23,6 +24,12 @@ export default defineConfig((): UserConfig => {
 				browser: true,
 				modulesOnly: true,
 				preferBuiltins: true,
+			}),
+			visualizer({
+				filename: 'tmp/stats.html',
+				template: 'sunburst',
+				// To match wrangler uploaded format
+				gzipSize: true,
 			}),
 		],
 		server: {
