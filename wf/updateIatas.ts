@@ -28,7 +28,7 @@ interface DoColo {
 		string,
 		DoHost
 	>;
-	nearestRegion: LoadBalancerRegion['region_code'];
+	nearestRegion?: LoadBalancerRegion['region_code'];
 }
 interface DoHost {
 	likelihood: number;
@@ -87,19 +87,20 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 				}),
 		);
 
-		const [doIatas, instances] = await Promise.all([
-			step.do('Fetch DO colos', () =>
+		const [{ iatas: doIatas, coloRegions: doColoRegions }, instances] = await Promise.all([
+			step.do('Fetch DO colos and region hints', () =>
 				fetch(new URL('https://where.durableobjects.live/api/v3/data.json')).then((response) => {
 					if (response.ok) {
-						return response.json<DoData>().then((doData) =>
-							Array.from(
+						return response.json<DoData>().then((doData) => ({
+							iatas: Array.from(
 								new Set(
 									Object.values(doData.colos)
 										.map((colo) => Object.keys(colo.hosts))
 										.flat(),
 								),
 							).map((doColo) => doColo.toUpperCase() as IATA),
-						);
+							coloRegions: Object.fromEntries(Object.entries(doData.colos).map(([colo, { nearestRegion }]) => [colo.toUpperCase(), { nearestRegion }])),
+						}));
 					} else {
 						throw new Error(`${response.status} ${response.statusText} (${response.headers.get('cf-ray')}) Failed to fetch DO colos: `);
 					}
@@ -178,8 +179,16 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 					}),
 				)?.region_code;
 
-				if (matchingRegion) {
-					const locationHint: DOLocations = (() => {
+				// Prefer the hint where.durableobjects.live measured for this colo; LB regions don't always map to the hint that actually lands there (e.g. HKG)
+				const locationHint: DOLocations | undefined =
+					/**
+					 * Pick the DO location hint that where.durableobjects.live observed for `iata`'s own colo.
+					 *
+					 * Load Balancer regions don't line up 1:1 with DO location hints (e.g. Hong Kong is `NEAS` -> `apac-ne`, but DOs hinted `apac-ne` land in NRT/ICN/KIX, while `apac` lands in HKG).
+					 * Prefer the measured hint when it is a valid location, otherwise return `undefined` so the caller can fall back.
+					 */
+					Object.values(DOLocations).find((hint) => hint === (doColoRegions[iataToCreate.toLowerCase()] ?? doColoRegions[iataToCreate.toUpperCase()])?.nearestRegion?.toLowerCase()) ??
+					(() => {
 						switch (matchingRegion) {
 							case 'EEU':
 								return DOLocations['Eastern Europe'];
@@ -207,11 +216,14 @@ export class UpdateIatas extends WorkflowEntrypoint<EnvVars> {
 								return DOLocations['Western Europe'];
 							case 'WNAM':
 								return DOLocations['Western North America'];
+							default:
+								return undefined;
 						}
 					})();
 
+				if (locationHint) {
 					const do_id = await step.do(
-						`Attempting to spawn ${iataToCreate} in ${matchingRegion}`,
+						`Attempting to spawn ${iataToCreate} in ${locationHint}`,
 						{
 							retries: {
 								limit: 100,
